@@ -1,9 +1,10 @@
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::string::String;
 use std::{fs, process};
-use clap::{AppSettings, arg, ArgAction, Command};
+use std::collections::HashMap;
+use clap::{AppSettings, arg, ArgAction, Command, value_parser};
 
 #[derive(Clone, Copy)]
 enum PasswordVersion {
@@ -27,6 +28,11 @@ enum PasswordGrade {
   Gold,
   Silver,
   Bronze,
+}
+
+struct SaveData {
+  is_clear: bool,
+  data: Vec<u8>,
 }
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
@@ -71,18 +77,17 @@ impl BitArray {
 
 fn main() {
   let matches = Command::new("Golden Sun Password Exporter")
-    .version("Version: 0.1.0")
-    .author("Author: Hambaka")
-    .about("About: \nRead save data to generate password and save it as a text file, \nand optionally generate memory dump file and cheats")
-    .args_override_self(true)
+    .version("0.1.1")
+    .author("Hambaka")
+    .about("Read save data to generate password and save it as a text file, \nand optionally generate memory dump file and cheats")
     .global_setting(AppSettings::DeriveDisplayOrder)
     .allow_negative_numbers(true)
     .arg(
       arg!(
         <INPUT_FILE> "Golden Sun save file"
         )
+        .value_parser(value_parser!(PathBuf))
         .required(true)
-        .allow_invalid_utf8(true),
     )
     .arg(
       arg!(
@@ -122,40 +127,38 @@ fn main() {
       arg!(
         -o --output <OUTPUT_DIR> "Output directory"
       )
+        .value_parser(value_parser!(PathBuf))
         .required(false)
-        .allow_invalid_utf8(true),
     )
     .get_matches();
 
   // Read save file.
-  let raw_input_path = matches.value_of_os("INPUT_FILE").unwrap();
+  let raw_input_path = matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
   let mut input_file = File::open(raw_input_path).expect("An error occurred while opening save file!");
 
-  // Check the size of save file.
-  // The size of save file should be 64KB,
-  // though seems the .SaveRAM file created by Bizhawk is 128KB.
-  // Even its size 128KB, seems it only use first 64KB space to store save data.
-  if input_file.metadata().unwrap().len() != 0x10000 && input_file.metadata().unwrap().len() != 0x20000 {
+  /* Check the size of save file.
+     The size of save file should be 64KB,
+     though the .SaveRAM file created by Bizhawk is 128KB.
+     Even its size is 128KB, seems it only use first 64KB space to store save data. */
+  let file_size = input_file.metadata().unwrap().len();
+  if file_size != 0x10000 && file_size != 0x20000 {
     eprintln!("The size of save file is not valid!");
     return;
   }
 
-  // Default value is "false", only export password from clear save data.
-  // Set it to true will export password from all existing save data in save file,
-  // even it is not a clear data.
-  let export_all_data = *matches.get_one::<bool>("all").expect("Defaulted by clap");
+  /* Default value is "false", only export password from clear save data.
+     Set it to "true" will export password from all existing save data in save file,
+     even it is not a clear data. */
+  let to_export_all_data = *matches.get_one::<bool>("all").expect("Defaulted by clap");
 
-  // Get save data from save file with slot number.
-  // Also check if the save data is clear data.
+  /* Get save data from save file with slot number.
+     Also check if the save data is clear data. */
   let mut raw_save_file = Vec::new();
   input_file.read_to_end(&mut raw_save_file).unwrap();
-  let result_data = get_save_data(export_all_data, &raw_save_file);
-  let slot_num = result_data.0;
-  let is_clear_data = result_data.1;
-  let save_data = result_data.2;
+  let save_data_map = get_save_data(to_export_all_data, &raw_save_file);
 
-  if slot_num.len() == 0 {
-    if !export_all_data {
+  if save_data_map.is_empty() {
+    if !to_export_all_data {
       eprintln!("There is no clear data in save file!");
     } else {
       eprintln!("There is no save data in save file!");
@@ -163,27 +166,26 @@ fn main() {
     return;
   }
 
-  let grade = matches.value_of("grade").unwrap();
-  let password_grade = match grade {
+  let grade = matches.get_one::<String>("grade").unwrap();
+  let password_grade = match grade.as_str() {
     "g" => PasswordGrade::Gold,
     "s" => PasswordGrade::Silver,
     "b" => PasswordGrade::Bronze,
     _ => PasswordGrade::Gold,
   };
 
-  let text = matches.value_of("text").unwrap();
-  let password_version = match text {
+  let text = matches.get_one::<String>("text").unwrap();
+  let password_version = match text.as_str() {
     "j" => PasswordVersion::Hiragana,
     "e" => PasswordVersion::LetterNumberSymbol,
     _ => PasswordVersion::LetterNumberSymbol,
   };
 
-  let export_memory_dump = *matches.get_one::<bool>("memory").expect("Defaulted by clap");
+  let to_export_memory_dump = *matches.get_one::<bool>("memory").expect("Defaulted by clap");
 
   let cheat_version;
-  if matches.is_present("cheat") {
-    let cheat = matches.value_of("cheat").unwrap();
-    cheat_version = match cheat {
+  if let Some(cheat) = matches.get_one::<String>("cheat") {
+    cheat_version = match cheat.as_str() {
       "j" => CheatVersion::Japanese,
       "u" => CheatVersion::English,
       "g" => CheatVersion::German,
@@ -197,38 +199,42 @@ fn main() {
   }
 
   let output_dir_str;
-  if matches.is_present("output") {
-    output_dir_str = String::from(Path::new(matches.value_of_os("output").unwrap().to_str().unwrap()).to_str().unwrap());
+  if let Some(output_path_buf) = matches.get_one::<PathBuf>("output") {
+    output_dir_str = String::from(output_path_buf.to_str().unwrap());
   } else {
-    let input_path = Path::new(raw_input_path);
-    output_dir_str = String::from(Path::new(input_path.parent().unwrap()).join(format!("{}_output", input_path.file_stem().unwrap().to_str().unwrap())).to_str().unwrap());
+    output_dir_str = String::from(raw_input_path.parent().unwrap().join(format!("{}_output", raw_input_path.file_stem().unwrap().to_str().unwrap())).to_str().unwrap());
   }
   let output_dir_path = Path::new(output_dir_str.as_str());
   fs::create_dir_all(output_dir_path).expect("Failed to create output directory!");
 
-
-  for i in 0..slot_num.len() {
-    let raw_data = get_raw_data(save_data[i]);
+  for (key, val) in save_data_map.iter() {
+    let raw_data = get_raw_data(&val.data);
     let password_bytes = gen_password_bytes(password_grade, raw_data.0, raw_data.1, raw_data.2, raw_data.3, raw_data.4, raw_data.5);
-    let sub_dir_str = create_sub_dir(slot_num[i], is_clear_data[i], output_dir_str.as_str());
-    write_password_text_file(password_bytes.as_slice(), password_version, sub_dir_str.as_str());
-    if export_memory_dump {
-      write_memory_dump_file(password_bytes.as_slice(), sub_dir_str.as_str());
+    let sub_dir_str = create_sub_dir(key.clone(), val.is_clear, output_dir_str.as_str());
+    write_password_text_file(&password_bytes, password_version, sub_dir_str.as_str());
+    if to_export_memory_dump {
+      write_memory_dump_file(&password_bytes, sub_dir_str.as_str());
     }
-    write_cheat_file(password_bytes.as_slice(), cheat_version, sub_dir_str.as_str());
+    write_cheat_file(&password_bytes, cheat_version, sub_dir_str.as_str());
   }
 }
 
-fn get_save_data(export_all_data: bool, raw_save_file: &Vec<u8>) -> (Vec<u8>, Vec<bool>, Vec<&[u8]>) {
-  let camelot_header = &[0x43u8, 0x41u8, 0x4Du8, 0x45u8, 0x4Cu8, 0x4Fu8, 0x54u8];
-  let mut slot_num = Vec::new();
-  let mut is_clear_data = Vec::new();
-  let mut clear_data = Vec::new();
+fn get_save_data(to_export_all_data: bool, raw_save_file: &Vec<u8>) -> HashMap<u8, SaveData> {
+  let camelot_header = [0x43u8, 0x41u8, 0x4Du8, 0x45u8, 0x4Cu8, 0x4Fu8, 0x54u8];
+  let mut save_data_map = HashMap::new();
   let mut blank_save_slot_count = 0;
   for i in 0..16 {
-    // A lazy and inaccurate way to detect if save file is Golden Sun save file.
-    // In Golden Sun, each save data(slot) take 4KB (0x1000) space.
-    // The first 7 bytes of each slot containing save data are "CAMELOT".
+    /* Another lazy way to check if save slot has no save data.
+       If the first byte is "FF", that means this slot does not contain any save data,
+       then skip current iteration. */
+    if raw_save_file[i * 0x1000] == 0xFF {
+      blank_save_slot_count += 1;
+      continue;
+    }
+
+    /* A lazy and inaccurate way to detect if save file is Golden Sun save file.
+       In Golden Sun, each save data(slot) take 4KB (0x1000) space.
+       The first 7 bytes of each slot containing save data are "CAMELOT". */
     for j in 0..7 {
       if raw_save_file[i * 0x1000 + j] != camelot_header[j] {
         eprintln!("The input save file is not Golden Sun save file!");
@@ -236,39 +242,33 @@ fn get_save_data(export_all_data: bool, raw_save_file: &Vec<u8>) -> (Vec<u8>, Ve
       }
     }
 
-    // Another lazy way to check if save slot has no save data.
-    // If the first byte is "FF", that means this slot does not contain any save data,
-    // then skip current iteration.
-    if raw_save_file[i * 0x1000] == 0xFF {
-      blank_save_slot_count += 1;
-      continue;
-    }
-
     if raw_save_file[i * 0x1000] == 0x43 {
-      // The 8th byte is the slot number, it only show 3 active save data in game.
-      // So the values for those 3 active save data are: "00", "01" and "02".
-      // And seems "10" is for backup save data.
+      /* The 8th byte is the slot number, it only show 3 active save data in game.
+         So the values for those 3 active save data are: "0x00", "0x01" and "0x02".
+         And seems "0x10" and other values bigger than "0x02" are for backup save data. */
       if raw_save_file[i * 0x1000 + 0x07] > 0x02 {
         continue;
       }
 
-      // Seems there are three bytes stored save location: "0x410", "0x418" and "0x490".
-      // And the values are all the same.
-      // Clear data's save location value is 1.
+      /* Does not include first 16 bytes header.
+         The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
+         0xA40 - 0x10 = 0xA30 */
+      let mut save_data = SaveData { is_clear: false, data: vec![0; 0xA30] };
+      /* Seems there are three bytes stored save location: "0x410", "0x418" and "0x490".
+         And the values are all the same.
+         Clear data's save location value is 1. */
       if raw_save_file[i * 0x1000 + 0x410] != 0x01 {
-        if export_all_data {
-          is_clear_data.push(false);
-        } else {
+        if !to_export_all_data {
           continue;
         }
       } else {
-        is_clear_data.push(true);
+        save_data.is_clear = true;
       }
-      // 0, 1, 2 -> 1, 2, 3
-      slot_num.push(raw_save_file.get(i * 0x1000 + 0x07).unwrap() + 1);
-      // Does not include 16 bytes header.
-      // The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
-      clear_data.push(raw_save_file.get(i * 0x1000 + 0x10..i * 0x1000 + 0xA40).unwrap());
+      save_data.data.clone_from_slice(raw_save_file.get(i * 0x1000 + 0x10..i * 0x1000 + 0xA40).unwrap());
+
+      /* Key is save slot number: 0, 1, 2 -> 1, 2, 3
+         Value is save data. */
+      save_data_map.insert(raw_save_file.get(i * 0x1000 + 0x07).unwrap() + 1, save_data);
     }
   }
   if blank_save_slot_count == 16 {
@@ -276,19 +276,19 @@ fn get_save_data(export_all_data: bool, raw_save_file: &Vec<u8>) -> (Vec<u8>, Ve
     process::exit(1);
   }
 
-  return (slot_num, is_clear_data, clear_data);
+  return save_data_map;
 }
 
-// Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-// Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L8
+/* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
+   Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L8 */
 fn get_event_flag(raw_save: &[u8], flag: i32) -> u8 {
   let byte_pos = (flag >> 3) as usize;
   let bit_pos = flag & 7;
   return (raw_save[(0x40 + byte_pos)] >> bit_pos) & 1;
 }
 
-// Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-// Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35
+/* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
+   Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
 fn get_raw_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4], [[u16; 15]; 4], u32) {
   // [u8; 4]
   let mut levels = [0; 4];
@@ -345,8 +345,8 @@ fn get_raw_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4], 
   return (levels, jinn, events, stats, items, coins);
 }
 
-// Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-// Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79
+/* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
+   Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
 fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], jinn: [u32; 4], events: [u8; 6], stats: [[u16; 6]; 4], items: [[u16; 15]; 4], coins: u32) -> Vec<u8> {
   let mut bits = BitArray { bits: Vec::new() };
 
@@ -738,17 +738,17 @@ fn write_password_text_file(password_bytes: &[u8], password_version: PasswordVer
   output_file.write_all(text.as_bytes()).expect("Failed to write to password text file!");
 }
 
-// Write password bytes to a binary file.
-// After you go to password input screen in GS2, you can import it via emulator's memory viewer.
-// Though you have to choose the correct address and import it, you can check the address below.
+/* Write password bytes to a binary file.
+   After you go to password input screen in GS2, you can import it via emulator's memory viewer.
+   Though you have to choose the correct address and import it, you can check the address below. */
 fn write_memory_dump_file(password_bytes: &[u8], sub_dir_str: &str) {
   let output_path = Path::new(sub_dir_str).join("memory.dmp");
   let mut output_file = File::create(output_path).expect("Failed to create memory dump file!");
   output_file.write_all(password_bytes).expect("Failed to write to memory dump file!");
 }
 
-// I'm not sure, maybe you can use this kind of raw cheat code on your phone?
-// Then you don't have to input password manually.
+/* I'm not sure, maybe you can use this kind of raw cheat code on your phone?
+   Then you don't have to input password manually. */
 fn write_cheat_file(password_bytes: &[u8], cheat_version: CheatVersion, sub_dir_str: &str) {
   // The address for password input screen in Golden Sun: The Lost Age
   let mut address = match cheat_version {
