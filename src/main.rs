@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::string::String;
 use std::{fs, process};
 use std::collections::HashMap;
-use clap::{AppSettings, arg, ArgAction, Command, value_parser};
+use clap::{arg, ArgAction, Command, value_parser};
 
 #[derive(Clone, Copy)]
 enum PasswordVersion {
@@ -80,7 +80,6 @@ fn main() {
     .version("0.1.1")
     .author("Hambaka")
     .about("Read save data to generate password and save it as a text file, \nand optionally generate memory dump file and cheats")
-    .global_setting(AppSettings::DeriveDisplayOrder)
     .allow_negative_numbers(true)
     .arg(
       arg!(
@@ -328,17 +327,17 @@ fn get_raw_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4], 
       items[i][j] = u16::from_le_bytes([raw_save[base + 0xD8 + 2 * j], raw_save[base + 0xD9 + 2 * j]]);
     }
 
-    // Save Hamett(Hammet)
+    // Saved Hametto/Hammet
     events[0] = get_event_flag(raw_save, 0x941);
-    // Beat Colosso
+    // Beat Colosso (Won the final fight against Navampa)
     events[1] = get_event_flag(raw_save, 0x951);
-    // Ulmuch(Hsu) Died
+    // Ulmuch/Hsu was rescued by Hamo/Hama and Kouran/Feizhi alone, and Robin/Isaac's party didn't lend a hand
     events[2] = get_event_flag(raw_save, 0x8B3);
-    // Beat Talos(Deadbeard)
+    // Beat Talos/Deadbeard
     events[3] = get_event_flag(raw_save, 0x8D1);
-    // Return to Haidia(Vale)
+    // Visited Haidia/Vale after entering Kalay (Return to Haidia/Vale and find out that Robin/Isaac's mother's sick.)
     events[4] = get_event_flag(raw_save, 0x81E);
-    // Return to Coopup(Vault)
+    // Visited Coopup/Vault after entering Kalay (Return to Coopup/Vault and talk with the mayor about the thieves, and find out that thieves have fled Coopup/Vault.)
     events[5] = get_event_flag(raw_save, 0x868);
   }
   coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
