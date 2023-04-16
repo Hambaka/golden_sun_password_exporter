@@ -1,2 +1,3 @@
 # golden_sun_password_exporter
-Read Golden Sun save data to generate password for Golden Sun: The Lost Age
+Read a Golden Sun save file/password text file/password memory dump binary file to generate password text/memory dump binary/cheat files for Golden Sun: The Lost Age
+
