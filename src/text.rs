@@ -1,15 +1,11 @@
-#[derive(Clone, Copy)]
-pub enum PasswordVersion {
-  Hiragana,
-  LetterNumberSymbol,
-}
+use crate::enums::PasswordVersion;
 
-pub fn get_save_type(password: &str) -> PasswordVersion {
+pub fn check_password_version(password: &str) -> PasswordVersion {
   let first_char = password.chars().nth(0).unwrap();
   if first_char <= 'z' {
-    PasswordVersion::LetterNumberSymbol
+    PasswordVersion::English
   } else {
-    PasswordVersion::Hiragana
+    PasswordVersion::Japanese
   }
 }
 
@@ -371,11 +367,179 @@ fn en_to_byte(input: char) -> u8 {
   }
 }
 
+pub fn byte_to_jp(input: u8) -> char {
+  match input {
+    0x00 => 'あ',
+    0x01 => 'い',
+    0x02 => 'う',
+    0x03 => 'え',
+    0x04 => 'お',
+
+    0x05 => 'か',
+    0x06 => 'き',
+    0x07 => 'く',
+    0x08 => 'け',
+    0x09 => 'こ',
+
+    0x0A => 'さ',
+    0x0B => 'し',
+    0x0C => 'す',
+    0x0D => 'せ',
+    0x0E => 'そ',
+
+    0x0F => 'た',
+    0x10 => 'ち',
+    0x11 => 'つ',
+    0x12 => 'て',
+    0x13 => 'と',
+
+    0x14 => 'な',
+    0x15 => 'に',
+    0x16 => 'ぬ',
+    0x17 => 'ね',
+    0x18 => 'の',
+
+    0x19 => 'は',
+    0x1A => 'ひ',
+    0x1B => 'ふ',
+    0x1C => 'へ',
+    0x1D => 'ほ',
+
+    0x1E => 'ま',
+    0x1F => 'み',
+    0x20 => 'む',
+    0x21 => 'め',
+    0x22 => 'も',
+
+    0x23 => 'や',
+    0x24 => 'ゆ',
+    0x25 => 'よ',
+
+    0x26 => 'ら',
+    0x27 => 'り',
+    0x28 => 'る',
+    0x29 => 'れ',
+    0x2A => 'ろ',
+
+    0x2B => 'わ',
+    0x2D => 'を',
+    0x2C => 'ん',
+
+    0x2E => 'が',
+    0x2F => 'ぎ',
+    0x30 => 'ぐ',
+    0x31 => 'げ',
+    0x32 => 'ご',
+
+    0x33 => 'ざ',
+    0x34 => 'じ',
+    0x35 => 'ず',
+    0x36 => 'ぜ',
+    0x37 => 'ぞ',
+
+    0x38 => 'だ',
+    0x39 => 'で',
+    0x3A => 'ど',
+
+    0x3B => 'ば',
+    0x3C => 'び',
+    0x3D => 'ぶ',
+    0x3E => 'べ',
+    0x3F => 'ぼ',
+    _ => '？',
+  }
+}
+
+pub fn byte_to_en(input: u8) -> char {
+  match input {
+    0x00 => 'A',
+    0x01 => 'B',
+    0x02 => 'C',
+    0x03 => 'D',
+    0x04 => 'E',
+
+    0x05 => 'F',
+    0x06 => 'G',
+    0x07 => 'H',
+    0x08 => 'J',
+    0x09 => 'K',
+
+    0x0A => 'L',
+    0x0B => 'M',
+    0x0C => 'N',
+    0x0D => 'P',
+    0x0E => 'Q',
+
+    0x0F => 'R',
+
+    0x10 => 'S',
+    0x11 => 'T',
+    0x12 => 'U',
+    0x13 => 'V',
+    0x14 => 'W',
+
+    0x15 => 'X',
+    0x16 => 'Y',
+    0x17 => 'Z',
+    0x18 => '2',
+    0x19 => '3',
+
+    0x1A => '4',
+    0x1B => '5',
+    0x1C => '6',
+    0x1D => '7',
+    0x1E => '8',
+
+    0x1F => '9',
+
+    0x20 => 'a',
+    0x21 => 'b',
+    0x22 => 'c',
+    0x23 => 'd',
+    0x24 => 'e',
+
+    0x25 => 'f',
+    0x26 => 'g',
+    0x27 => 'h',
+    0x28 => 'i',
+    0x29 => 'j',
+
+    0x2A => 'k',
+    0x2B => 'm',
+    0x2C => 'n',
+    0x2D => 'p',
+    0x2E => 'q',
+
+    0x2F => 'r',
+
+    0x30 => 's',
+    0x31 => 't',
+    0x32 => 'u',
+    0x33 => 'v',
+    0x34 => 'w',
+
+    0x35 => 'x',
+    0x36 => 'y',
+    0x37 => 'z',
+    0x38 => '!',
+    0x39 => '?',
+
+    0x3A => '#',
+    0x3B => '&',
+    0x3C => '$',
+    0x3D => '%',
+    0x3E => '+',
+
+    0x3F => '=',
+    _ => '?',
+  }
+}
+
 pub fn txt_to_dmp(mut input: String, password_version: PasswordVersion) -> Vec<u8> {
   remove_whitespace_mut(&mut input);
   let dmp_bytes = match password_version {
-    PasswordVersion::Hiragana => input.chars().map(jp_to_byte).collect(),
-    PasswordVersion::LetterNumberSymbol => input.chars().map(en_to_byte).collect(),
+    PasswordVersion::Japanese => input.chars().map(jp_to_byte).collect(),
+    PasswordVersion::English => input.chars().map(en_to_byte).collect(),
   };
   return dmp_bytes;
 }

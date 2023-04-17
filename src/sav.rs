@@ -1,13 +1,6 @@
 use std::collections::HashMap;
-use std::path::Path;
-use std::{fs, process};
-
-#[derive(Clone, Copy)]
-pub enum PasswordGrade {
-  Gold,
-  Silver,
-  Bronze,
-}
+use std::process;
+use crate::enums::PasswordGrade;
 
 pub struct SaveData {
   is_clear: bool,
@@ -22,11 +15,14 @@ impl SaveData {
   pub fn get_is_clear(&self) -> bool {
     self.is_clear
   }
-  /*
-    fn set_is_clear(&mut self) ->&mut bool{
-      &mut self.is_clear
-    }
-  */
+
+  fn set_data(&mut self, val: &[u8]) {
+    self.data.clone_from_slice(val)
+  }
+
+  fn set_is_clear(&mut self, val: bool) {
+    self.is_clear = val;
+  }
 }
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
@@ -66,6 +62,10 @@ impl BitArray {
       }
     }
     return acc;
+  }
+
+  fn get_len(&self) -> usize {
+    self.bits.len()
   }
 }
 
@@ -112,9 +112,9 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &Vec<u8>) -> H
           continue;
         }
       } else {
-        save_data.is_clear = true;
+        save_data.set_is_clear(true);
       }
-      save_data.data.clone_from_slice(raw_save_file.get(i * 0x1000 + 0x10..i * 0x1000 + 0xA40).unwrap());
+      save_data.set_data(raw_save_file.get(i * 0x1000 + 0x10..i * 0x1000 + 0xA40).unwrap());
 
       /* Key is save slot number: 0, 1, 2 -> 1, 2, 3
          Value is save data. */
@@ -139,7 +139,7 @@ fn get_event_flag(raw_save: &[u8], flag: i32) -> u8 {
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
    Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
-pub fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4], [[u16; 15]; 4], u32) {
+fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4], [[u16; 15]; 4], u32) {
   // [u8; 4]
   let mut levels = [0; 4];
   // [u32; 4]
@@ -197,7 +197,7 @@ pub fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6];
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
    Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
-pub fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], jinn: [u32; 4], events: [u8; 6], stats: [[u16; 6]; 4], items: [[u16; 15]; 4], coins: u32) -> Vec<u8> {
+fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], jinn: [u32; 4], events: [u8; 6], stats: [[u16; 6]; 4], items: [[u16; 15]; 4], coins: u32) -> Vec<u8> {
   let mut bits = BitArray { bits: Vec::new() };
 
   // Insert 7 bits per level, 7 bits per jinn element
@@ -308,7 +308,7 @@ pub fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], jinn: [u32; 4],
   }
 
   // Append 0 until reaching the correct password size.
-  for _i in 0..8 * size - bits.bits.len() {
+  for _i in 0..8 * size - bits.get_len() {
     bits.push_bit(0);
   }
 
@@ -346,11 +346,11 @@ pub fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], jinn: [u32; 4],
     let mut max = i + 5;
     let entry;
 
-    if max <= bits.bits.len() {
+    if max <= bits.get_len() {
       entry = bits.sub_bits(i, max);
     } else {
       let last_left_shift = max - max_size + 1;
-      max = bits.bits.len() - 1;
+      max = bits.get_len() - 1;
       entry = bits.sub_bits(i, max) << last_left_shift;
     }
 
@@ -372,14 +372,7 @@ pub fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], jinn: [u32; 4],
   return password_bytes;
 }
 
-pub fn create_sub_dir(slot_num: u8, is_clear_data: bool, output_dir_str: &str) -> String {
-  let output_path;
-  if is_clear_data {
-    output_path = Path::new(output_dir_str).join(format!("Save{:02}(Clear)", slot_num));
-  } else {
-    output_path = Path::new(output_dir_str).join(format!("Save{:02}", slot_num));
-  }
-  let sub_dir_str = String::from(output_path.to_str().unwrap());
-  fs::create_dir_all(output_path).expect("Failed to create sub directory!");
-  return sub_dir_str;
+pub fn get_password_bytes(raw_save: &[u8], grade: PasswordGrade) -> Vec<u8> {
+  let save_data = get_save_data(raw_save);
+  return gen_password_bytes(grade, save_data.0, save_data.1, save_data.2, save_data.3, save_data.4, save_data.5);
 }
