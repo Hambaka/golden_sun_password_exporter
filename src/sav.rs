@@ -134,7 +134,7 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &Vec<u8>) -> H
 fn get_event_flag(raw_save: &[u8], flag: i32) -> u8 {
   let byte_pos = (flag >> 3) as usize;
   let bit_pos = flag & 7;
-  return (raw_save[(0x40 + byte_pos)] >> bit_pos) & 1;
+  return (raw_save[0x40 + byte_pos] >> bit_pos) & 1;
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
