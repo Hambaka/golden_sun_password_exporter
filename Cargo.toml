@@ -7,3 +7,10 @@ edition = "2021"
 
 [dependencies]
 clap = "4.2.4"
+
+# https://github.com/johnthagen/min-sized-rust
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
