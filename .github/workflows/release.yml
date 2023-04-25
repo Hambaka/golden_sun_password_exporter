@@ -1,7 +1,6 @@
 name: Rust Release binary
 
 on:
-  workflow_dispatch:
   release:
     types: [created]
 
