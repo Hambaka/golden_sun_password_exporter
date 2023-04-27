@@ -177,7 +177,7 @@ fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4],
     for j in 0..15 {
       items[i][j] = u16::from_le_bytes([raw_save[base + 0xD8 + 2 * j], raw_save[base + 0xD9 + 2 * j]]);
     }
-
+  }
     // Saved Hametto/Hammet
     events[0] = get_event_flag(raw_save, 0x941);
     // Beat Colosso (Won the final fight against Navampa)
@@ -190,7 +190,7 @@ fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4],
     events[4] = get_event_flag(raw_save, 0x81E);
     // Visited Coopup/Vault after entering Kalay (Return to Coopup/Vault and talk with the mayor about the thieves, and find out that thieves have fled Coopup/Vault.)
     events[5] = get_event_flag(raw_save, 0x868);
-  }
+
   coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
   return (levels, jinn, events, stats, items, coins);
 }
