@@ -143,8 +143,10 @@ fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4],
   // [u8; 4]
   let mut levels = [0; 4];
   // [u32; 4]
+  // All: [0x7F, 0x7F, 0x7F, 0x7F]
   let mut jinn = [0; 4];
   // [u8; 6]
+  // All: [1, 1, 0, 1, 1, 1]
   let mut events = [0; 6];
   // [[u16; 6]; 4]
   let mut stats = [[0; 6]; 4];
