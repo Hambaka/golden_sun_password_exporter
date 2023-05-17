@@ -25,9 +25,9 @@ pub enum CheatVersion {
 
 pub fn get_password_grade(grade_arg_str: &str) -> PasswordGrade {
   match grade_arg_str {
-    "g" => PasswordGrade::Gold,
     "s" => PasswordGrade::Silver,
     "b" => PasswordGrade::Bronze,
+    // Include "g"
     _ => PasswordGrade::Gold,
   }
 }
@@ -35,7 +35,7 @@ pub fn get_password_grade(grade_arg_str: &str) -> PasswordGrade {
 pub fn get_password_version(text_arg_str: &str) -> PasswordVersion {
   match text_arg_str {
     "j" => PasswordVersion::Japanese,
-    "e" => PasswordVersion::English,
+    // Include "e"
     _ => PasswordVersion::English,
   }
 }
@@ -50,11 +50,11 @@ pub fn rev_password_version(password_version: PasswordVersion) -> PasswordVersio
 pub fn get_cheat_version(cheat_version: &str) -> CheatVersion {
   match cheat_version {
     "j" => CheatVersion::Japanese,
-    "e" => CheatVersion::English,
     "g" => CheatVersion::German,
     "s" => CheatVersion::Spanish,
     "f" => CheatVersion::French,
     "i" => CheatVersion::Italian,
+    // Include "e"
     _ => CheatVersion::English,
   }
 }
@@ -62,11 +62,9 @@ pub fn get_cheat_version(cheat_version: &str) -> CheatVersion {
 // For Golden Sun: Lost Age
 pub fn get_cheat_address(cheat_version: CheatVersion) -> i32 {
   match cheat_version {
-    CheatVersion::Japanese => 0x0200A78A,
-    CheatVersion::English => 0x0200A74A,
-    CheatVersion::German => 0x0200A742,
-    CheatVersion::Spanish => 0x0200A73E,
-    CheatVersion::French => 0x0200A742,
-    CheatVersion::Italian => 0x0200A742,
+    CheatVersion::Japanese => 0x0200_A78A,
+    CheatVersion::English => 0x0200_A74A,
+    CheatVersion::German | CheatVersion::French | CheatVersion::Italian => 0x0200_A742,
+    CheatVersion::Spanish => 0x0200_A73E,
   }
 }

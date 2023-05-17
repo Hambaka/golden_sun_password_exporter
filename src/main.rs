@@ -64,7 +64,7 @@ fn main() {
         .group(
           ArgGroup::new("sav_args")
             .required(true)
-            .args(&["text", "memory", "cheat"])
+            .args(["text", "memory", "cheat"])
             .multiple(true)
         )
         .arg(
@@ -109,7 +109,7 @@ fn main() {
         .group(
           ArgGroup::new("txt_args")
             .required(true)
-            .args(&["text", "memory", "cheat"])
+            .args(["text", "memory", "cheat"])
             .multiple(true)
         )
         .arg(
@@ -146,7 +146,7 @@ fn main() {
         .group(
           ArgGroup::new("dmp_args")
             .required(true)
-            .args(&["text", "cheat"])
+            .args(["text", "cheat"])
             .multiple(true)
         )
         .arg(
@@ -188,10 +188,10 @@ fn main() {
       input_file.read_to_end(&mut raw_save_file).unwrap();
       let save_data_map = sav::get_raw_save_data(to_export_all_data, &raw_save_file);
       if save_data_map.is_empty() {
-        if !to_export_all_data {
-          eprintln!("There is no clear data in save file!");
-        } else {
+        if to_export_all_data {
           eprintln!("There is no save data in save file!");
+        } else {
+          eprintln!("There is no clear data in save file!");
         }
         return;
       }
@@ -224,9 +224,9 @@ fn main() {
       }
 
       // Write files.
-      for (key, val) in save_data_map.iter() {
+      for (key, val) in &save_data_map {
         let password_bytes = sav::get_password_bytes(val.get_data(), password_grade);
-        let sub_dir_str = output::create_sav_sub_dir(key.clone(), val.get_is_clear(), output_dir_str.as_str());
+        let sub_dir_str = output::create_sav_sub_dir(*key, val.get_is_clear(), output_dir_str.as_str());
 
         if let Some(password_version) = password_version_option {
           output::write_password_text_file(&password_bytes, password_version, sub_dir_str.as_str());

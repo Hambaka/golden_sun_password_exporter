@@ -1,7 +1,7 @@
 use crate::enums::PasswordVersion;
 
 pub fn check_password_version(password: &str) -> PasswordVersion {
-  let first_char = password.chars().nth(0).unwrap();
+  let first_char = password.chars().next().unwrap();
   if first_char <= 'z' {
     PasswordVersion::English
   } else {
@@ -531,7 +531,7 @@ pub fn byte_to_en(input: u8) -> char {
     0x3E => '+',
 
     0x3F => '=',
-    _ => '?',
+    _ => '∞',
   }
 }
 
@@ -541,5 +541,5 @@ pub fn txt_to_dmp(mut input: String, password_version: PasswordVersion) -> Vec<u
     PasswordVersion::Japanese => input.chars().map(jp_to_byte).collect(),
     PasswordVersion::English => input.chars().map(en_to_byte).collect(),
   };
-  return dmp_bytes;
+  dmp_bytes
 }

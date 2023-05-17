@@ -1,32 +1,30 @@
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use crate::{enums, text};
 
 pub fn create_sav_sub_dir(slot_num: u8, is_clear_data: bool, output_dir_str: &str) -> String {
-  let output_path;
-  if is_clear_data {
-    output_path = Path::new(output_dir_str).join(format!("Save{:02}(Clear)", slot_num));
+  let output_path = if is_clear_data {
+    Path::new(output_dir_str).join(format!("Save{slot_num:02}(Clear)"))
   } else {
-    output_path = Path::new(output_dir_str).join(format!("Save{:02}", slot_num));
-  }
+    Path::new(output_dir_str).join(format!("Save{slot_num:02}"))
+  };
   let sub_dir_str = String::from(output_path.to_str().unwrap());
   fs::create_dir_all(output_path).expect("Failed to create sub directory!");
-  return sub_dir_str;
+  sub_dir_str
 }
 
-pub fn create_output_dir(output_path_buf: &PathBuf, has_output_arg: bool) -> String {
-  let output_dir_str;
-  if has_output_arg {
-    output_dir_str = String::from(output_path_buf.to_str().unwrap());
+pub fn create_output_dir(output_path: &Path, has_output_arg: bool) -> String {
+  let output_dir_str = if has_output_arg {
+    String::from(output_path.to_str().unwrap())
   } else {
-    output_dir_str = String::from(output_path_buf.parent().unwrap().join(format!("{}_output", output_path_buf.file_stem().unwrap().to_str().unwrap())).to_str().unwrap());
-  }
+    String::from(output_path.parent().unwrap().join(format!("{}_output", output_path.file_stem().unwrap().to_str().unwrap())).to_str().unwrap())
+  };
   let output_dir_path = Path::new(output_dir_str.as_str());
   fs::create_dir_all(output_dir_path).expect("Failed to create output directory!");
 
-  return output_dir_str;
+  output_dir_str
 }
 
 pub fn write_password_text_file(password_bytes: &[u8], password_version: enums::PasswordVersion, output_dir_str: &str) {
@@ -34,8 +32,8 @@ pub fn write_password_text_file(password_bytes: &[u8], password_version: enums::
 
   match password_version {
     enums::PasswordVersion::Japanese => {
-      for i in 0..password_bytes.len() {
-        password_text.push(text::byte_to_jp(password_bytes[i]));
+      for (i, password_byte) in password_bytes.iter().enumerate() {
+        password_text.push(text::byte_to_jp(*password_byte));
         if (i + 1) % 50 == 0 {
           password_text.push('\n');
           password_text.push('\n');
@@ -47,8 +45,8 @@ pub fn write_password_text_file(password_bytes: &[u8], password_version: enums::
       }
     }
     enums::PasswordVersion::English => {
-      for i in 0..password_bytes.len() {
-        password_text.push(text::byte_to_en(password_bytes[i]));
+      for (i, password_byte) in password_bytes.iter().enumerate() {
+        password_text.push(text::byte_to_en(*password_byte));
         if (i + 1) % 50 == 0 {
           password_text.push('\n');
           password_text.push('\n');
