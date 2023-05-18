@@ -63,6 +63,15 @@ impl RawSaveData {
   }
 }
 
+struct SaveData {
+  levels: [u8; 4],
+  djinn: [u32; 4],
+  events: [u8; 6],
+  stats: [[u16; 6]; 4],
+  items: [[u16; 15]; 4],
+  coins: u32
+}
+
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 struct BitArray {
   bits: Vec<u8>,
@@ -111,7 +120,7 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8]) -> Hash
   let camelot_header = [0x43u8, 0x41u8, 0x4Du8, 0x45u8, 0x4Cu8, 0x4Fu8, 0x54u8];
   let mut all_possible_headers = Vec::new();
   // "u8" is slot number. (Start from 0)
-  let mut save_data_map:HashMap<u8, RawSaveData> = HashMap::new();
+  let mut save_data_map: HashMap<u8, RawSaveData> = HashMap::new();
   let mut blank_save_slot_count = 0;
   for i in 0..16 {
     /* Another lazy way to check if save slot has no save data.
@@ -191,7 +200,7 @@ fn get_event_flag(raw_save: &[u8], flag: u32) -> u8 {
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
    Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
-fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4], [[u16; 15]; 4], u32) {
+fn get_save_data(raw_save: &[u8]) -> SaveData {
   // [u8; 4]
   let mut levels = [0; 4];
   // [u32; 4]
@@ -245,23 +254,23 @@ fn get_save_data(raw_save: &[u8]) -> ([u8; 4], [u32; 4], [u8; 6], [[u16; 6]; 4],
 
   // u32
   let coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
-  (levels, djinn, events, stats, items, coins)
+  SaveData{ levels, djinn, events, stats, items, coins}
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
    Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
-fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], events: [u8; 6], stats: [[u16; 6]; 4], items: [[u16; 15]; 4], coins: u32) -> Vec<u8> {
+fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   let mut bits = BitArray { bits: Vec::new() };
 
   // Insert 7 bits per level, 7 bits per jinn element
   let mut level_bits = BitArray { bits: Vec::new() };
   let mut djinn_bits = BitArray { bits: Vec::new() };
   for i in (0..=3).rev() {
-    level_bits.push_bits(u32::from(levels[i]), 7);
+    level_bits.push_bits(u32::from(save_data.levels[i]), 7);
   }
 
   for i in (0..=3).rev() {
-    djinn_bits.push_bits(djinn[i], 7);
+    djinn_bits.push_bits(save_data.djinn[i], 7);
   }
 
   for i in (11..=27).rev().step_by(8) {
@@ -276,8 +285,8 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
   }
 
   for i in (0..=7).rev() {
-    if i < events.len() {
-      bits.push_bit(u32::from(events[i]));
+    if i < save_data.events.len() {
+      bits.push_bit(u32::from(save_data.events[i]));
     } else {
       bits.push_bit(0);
     }
@@ -294,7 +303,7 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
   if !matches!(grade, PasswordGrade::Gold) {
     let psynergy_items = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF];
     let mut flags = 0;
-    for items_per_person in &items {
+    for items_per_person in &save_data.items {
       for item in items_per_person {
         let id = item & 0x1FF;
         for (j, psynergy_item) in psynergy_items.iter().enumerate() {
@@ -309,7 +318,7 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
 
   // If password grade is gold or silver, insert stats.
   if !matches!(grade, PasswordGrade::Bronze) {
-    for stats_per_person in &stats {
+    for stats_per_person in &save_data.stats {
       // HP
       bits.push_bits(u32::from(stats_per_person[0]), 11);
       // EP
@@ -329,7 +338,7 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
   if matches!(grade, PasswordGrade::Gold) {
     bits.push_bits(0, 8);
     let mut counter = 0;
-    for items_per_person in &items {
+    for items_per_person in &save_data.items {
       for item in items_per_person {
         let id = item & 0x1FF;
         bits.push_bits(u32::from(id), 9);
@@ -345,7 +354,7 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
     let stackable_items = [0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xE2, 0xE3, 0xE4, 0xE5, 0xEC, 0xEE, 0xEF, 0xF0, 0xF1];
 
     // Insert quantities of stackable items for each energist(adept).
-    for items_per_person in &items {
+    for items_per_person in &save_data.items {
       for stackable_item in &stackable_items {
         let mut quantity = 0;
         for item in items_per_person {
@@ -357,7 +366,7 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
         bits.push_bits(u32::from(quantity), 5);
       }
     }
-    bits.push_bits(coins, 24);
+    bits.push_bits(save_data.coins, 24);
   }
 
   // Append 0 until reaching the correct password size.
@@ -427,5 +436,5 @@ fn gen_password_bytes(grade: PasswordGrade, levels: [u8; 4], djinn: [u32; 4], ev
 
 pub fn get_password_bytes(raw_save: &[u8], grade: PasswordGrade) -> Vec<u8> {
   let save_data = get_save_data(raw_save);
-  gen_password_bytes(grade, save_data.0, save_data.1, save_data.2, save_data.3, save_data.4, save_data.5)
+  gen_password_bytes(grade, &save_data)
 }
