@@ -2,18 +2,56 @@ use std::collections::HashMap;
 use std::process;
 use crate::enums::PasswordGrade;
 
-pub struct SaveData {
+/* More reference info/comment about Golden Sun save file from Dyrati (in "Obababot")
+
+   https://github.com/Dyrati/obababot/blob/main/obababot/gsfuncs.py
+   At line 579, the "get_save_data" function takes raw binary .sav data and returns individual save slots with all of the info from each valid save.
+   The function checks the file at 1000 byte intervals.
+
+   The first 16 bytes of each interval (the header) are organized as follows:
+   - 7 bytes for the ASCII string "CAMELOT"
+   - 1 byte for the slot number
+   - 2 bytes for a checksum
+   - 2 bytes for a priority number
+   - 4 bytes of garbage data
+
+   A header is valid if the first 7 bytes spell "CAMELOT", and the slot number is less than 16.
+   In the case where multiple headers have the same slot number, use the header with the highest priority number.
+   That should leave you with up to 3 valid headers.
+   The next 0x0FF0(GS1)/0x2FF0(GS2) bytes after the header constitute the save data for that file. */
+
+struct HeaderInfo {
+  // Range: 0 <= x < 16
+  index: usize,
+  priority: u16,
+  // Start from 0
+  slot_number: u8,
+  // Please note, the save location is not in save header. Only for checking valid header/save
+  is_clear: bool,
+}
+
+pub struct RawSaveData {
+  // Please note, the priority is in save header. Only for checking valid header/save
+  priority: u16,
   is_clear: bool,
   data: Vec<u8>,
 }
 
-impl SaveData {
+impl RawSaveData {
+  pub fn get_priority(&self) -> &u16 {
+    &self.priority
+  }
+
   pub fn get_data(&self) -> &[u8] {
     &self.data
   }
 
   pub fn get_is_clear(&self) -> bool {
     self.is_clear
+  }
+
+  fn set_priority(&mut self, val: u16) {
+    self.priority = val;
   }
 
   fn set_data(&mut self, val: &[u8]) {
@@ -69,9 +107,11 @@ impl BitArray {
   }
 }
 
-pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8]) -> HashMap<u8, SaveData> {
+pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8]) -> HashMap<u8, RawSaveData> {
   let camelot_header = [0x43u8, 0x41u8, 0x4Du8, 0x45u8, 0x4Cu8, 0x4Fu8, 0x54u8];
-  let mut save_data_map = HashMap::new();
+  let mut all_possible_headers = Vec::new();
+  // "u8" is slot number. (Start from 0)
+  let mut save_data_map:HashMap<u8, RawSaveData> = HashMap::new();
   let mut blank_save_slot_count = 0;
   for i in 0..16 {
     /* Another lazy way to check if save slot has no save data.
@@ -92,36 +132,50 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8]) -> Hash
       }
     }
 
-    if raw_save_file[i * 0x1000] == 0x43 {
-      /* The 8th byte is the slot number, it only show 3 active save data in game.
-         So the values for those 3 active save data are: "0x00", "0x01" and "0x02".
-         And seems "0x10" and other values bigger than "0x02" are for backup save data. */
-      if raw_save_file[i * 0x1000 + 0x07] > 0x02 {
-        continue;
-      }
-
-      /* Does not include first 16 bytes header.
-         The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
-         0xA40 - 0x10 = 0xA30 */
-      let mut save_data = SaveData { is_clear: false, data: vec![0; 0xA30] };
-      /* Seems there are three bytes stored save location: "0x410", "0x418" and "0x490".
-         And the values are all the same.
-         Clear data's save location value is 1. */
-      if raw_save_file[i * 0x1000 + 0x410] == 0x01 {
-        save_data.set_is_clear(true);
-      } else if !to_export_all_data {
-        continue;
-      }
-      save_data.set_data(raw_save_file.get(i * 0x1000 + 0x10..i * 0x1000 + 0xA40).unwrap());
-
-      /* Key is save slot number: 0, 1, 2 -> 1, 2, 3
-         Value is save data. */
-      save_data_map.insert(raw_save_file.get(i * 0x1000 + 0x07).unwrap() + 1, save_data);
+    /* The 8th byte is the slot number, it only show 3 active save data in game.
+       So the values for those 3 active save data are: "0x00", "0x01" and "0x02".
+       And seems "0x10" and other values bigger than "0x02" are for backup save data. */
+    if raw_save_file[i * 0x1000 + 0x07] > 0x02 {
+      continue;
     }
+
+    /* Seems there are three bytes stored save location: "0x410", "0x418" and "0x490".
+       And the values are all the same.
+       Clear data's save location value is 1. */
+    let is_clear_save = raw_save_file[i * 0x1000 + 0x410] == 0x01;
+    if !is_clear_save && !to_export_all_data {
+      continue;
+    }
+
+    // Get all possible valid save headers first.
+    all_possible_headers.push(HeaderInfo { index: i, priority: u16::from_le_bytes([raw_save_file[i * 0x1000 + 0x0A], raw_save_file[i * 0x1000 + 0x0B]]), slot_number: raw_save_file[i * 0x1000 + 0x07], is_clear: is_clear_save });
   }
+
   if blank_save_slot_count == 16 {
     eprintln!("There is no data in save file!");
     process::exit(1);
+  }
+
+  // Get all valid save data.
+  for (j, header) in all_possible_headers.iter().enumerate() {
+    if j > 0 && save_data_map.contains_key(&header.slot_number) {
+      if let Some(existed_save_data) = save_data_map.get(&header.slot_number) {
+        if header.priority > *existed_save_data.get_priority() {
+          save_data_map.remove(&header.slot_number);
+        } else {
+          continue;
+        }
+      }
+    }
+    /* Does not include first 16 bytes header.
+       The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
+       0xA40 - 0x10 = 0xA30 */
+    let mut save_data = RawSaveData { priority: 0, is_clear: false, data: vec![0; 0xA30] };
+    save_data.set_data(raw_save_file.get(header.index * 0x1000 + 0x10..header.index * 0x1000 + 0xA40).unwrap());
+    save_data.set_is_clear(header.is_clear);
+    save_data.set_priority(header.priority);
+    // Key is save slot number: 0, 1, 2
+    save_data_map.insert(header.slot_number, save_data);
   }
 
   save_data_map

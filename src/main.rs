@@ -226,7 +226,8 @@ fn main() {
       // Write files.
       for (key, val) in &save_data_map {
         let password_bytes = sav::get_password_bytes(val.get_data(), password_grade);
-        let sub_dir_str = output::create_sav_sub_dir(*key, val.get_is_clear(), output_dir_str.as_str());
+        // Key is save slot number: 0, 1, 2 -> 1, 2, 3
+        let sub_dir_str = output::create_sav_sub_dir(*key + 1, val.get_is_clear(), output_dir_str.as_str());
 
         if let Some(password_version) = password_version_option {
           output::write_password_text_file(&password_bytes, password_version, sub_dir_str.as_str());
