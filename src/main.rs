@@ -182,11 +182,21 @@ fn main() {
          even it is not a clear data. */
       let to_export_all_data = sub_matches.get_flag("all");
 
-      /* Get save data from save file with slot number.
-         Also check if the save data is clear data. */
       let mut raw_save_file = Vec::new();
       input_file.read_to_end(&mut raw_save_file).unwrap();
-      let save_data_map = sav::get_raw_save_data(to_export_all_data, &raw_save_file);
+
+      // Check if it is GS1(TBS) save file, also get loop start index.
+      let check_is_tbs_with_loop_start_index = sav::check_save_type_with_loop_start_index(&raw_save_file);
+      let is_tbs_save = check_is_tbs_with_loop_start_index.0;
+      if !is_tbs_save {
+        eprintln!("It's not a valid Golden Sun 1 save file! Or there is no save data in save file!");
+        return;
+      }
+      let loop_start_index = check_is_tbs_with_loop_start_index.1;
+
+      /* Get save data from save file with slot number.
+         Also check if the save data is clear data. */
+      let save_data_map = sav::get_raw_save_data(to_export_all_data, &raw_save_file, loop_start_index);
       if save_data_map.is_empty() {
         if to_export_all_data {
           eprintln!("There is no save data in save file!");

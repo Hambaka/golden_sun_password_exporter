@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::process;
 use crate::enums::PasswordGrade;
 
 /* More reference info/comment about Golden Sun save file from Dyrati (in "Obababot")
@@ -20,18 +19,56 @@ use crate::enums::PasswordGrade;
    That should leave you with up to 3 valid headers.
    The next 0x0FF0(GS1)/0x2FF0(GS2) bytes after the header constitute the save data for that file. */
 
+/// 7 bytes for the ASCII string "CAMELOT" in each save's header.
+const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
+
+/// Golden Sun build date
+/// Source: Golden Sun Hacking Community Discord Server
+/// GS1 (J) = 0x159C
+/// GS1 (U) = 0x1652
+/// GS1 (G) = 0x1849
+/// GS1 (S) = 0x1885
+/// GS1 (F) = 0x1713
+/// GS1 (I) = 0x1886
+const GS_BUILD_DATE: [[u8; 2]; 6] = [[0x9C, 0x15], [0x52, 0x16], [0x49, 0x18], [0x85, 0x18], [0x13, 0x17], [0x86, 0x18]];
+
+/// The size of each save slot is 4KB.
+const SAVE_SLOT_SIZE: usize = 0x1000;
+
+/// 64KB / 4KB = 16
+const MAX_LOOP_COUNT: usize = 16;
+
+/// All build date locations: 0x36 to 0x37, 0x250 to 0x251, 0x508 to 0x509
+/// All stored values are same.
+const FIRST_BUILD_DATE_LOCATION_INDEX: [usize; 2] = [0x36, 0x37];
+
+/// All save map(location) locations  :0x410, 0x418, 0x490
+/// All stored values are same.
+const FIRST_SAVE_MAP_LOCATION_INDEX: usize = 0x410;
+
+/// Clear data's save location value is 1.
+const CLEAR_DATA_SAVE_MAP_VALUE: u8 = 0x01;
+
+/// The 8th byte is the slot number, it only show 3 active save data in game.
+const HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX: usize = 0x07;
+/// The values for 3 'active' save data are: 0x00, 0x01 and 0x02.
+/// And seems 0x10 and other values bigger than 0x02 are for backup save data.
+/// But seems 0x10 is not a valid slot number?
+const MAX_VALID_SLOT_NUMBER: u8 = 0x02;
+const HEADER_PRIORITY_LOCATION_INDEX: [usize; 2] = [0x0A, 0x0B];
+
 struct HeaderInfo {
   // Range: 0 <= x < 16
   index: usize,
   priority: u16,
   // Start from 0
   slot_number: u8,
-  // Please note, the save location is not in save header. Only for checking valid header/save
+  // Please note, the save location is not in save header, this is only for checking valid header/save
   is_clear: bool,
 }
 
 pub struct RawSaveData {
-  // Please note, the priority is in save header. Only for checking valid header/save
+  // Please note, the priority is in save header, this is only for checking valid header/save
   priority: u16,
   is_clear: bool,
   data: Vec<u8>,
@@ -69,7 +106,7 @@ struct SaveData {
   events: [u8; 6],
   stats: [[u16; 6]; 4],
   items: [[u16; 15]; 4],
-  coins: u32
+  coins: u32,
 }
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
@@ -116,53 +153,45 @@ impl BitArray {
   }
 }
 
-pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8]) -> HashMap<u8, RawSaveData> {
-  let camelot_header = [0x43u8, 0x41u8, 0x4Du8, 0x45u8, 0x4Cu8, 0x4Fu8, 0x54u8];
-  let mut all_possible_headers = Vec::new();
-  // "u8" is slot number. (Start from 0)
-  let mut save_data_map: HashMap<u8, RawSaveData> = HashMap::new();
-  let mut blank_save_slot_count = 0;
-  for i in 0..16 {
-    /* Another lazy way to check if save slot has no save data.
-       If the first byte is "FF", that means this slot does not contain any save data,
-       then skip current iteration. */
-    if raw_save_file[i * 0x1000] == 0xFF {
-      blank_save_slot_count += 1;
+pub fn check_save_type_with_loop_start_index(raw_save_file: &[u8]) -> (bool, usize) {
+  let mut is_tbs_save = false;
+  let mut loop_start_index = MAX_LOOP_COUNT;
+  for i in 0..MAX_LOOP_COUNT {
+    let Ok(header_string) = std::str::from_utf8(&raw_save_file[(i * SAVE_SLOT_SIZE)..(i * SAVE_SLOT_SIZE + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX)]) else { continue; };
+    if !header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
       continue;
     }
 
-    /* A lazy and inaccurate way to detect if save file is Golden Sun save file.
-       In Golden Sun, each save data(slot) take 4KB (0x1000) space.
-       The first 7 bytes of each slot containing save data are "CAMELOT". */
-    for j in 0..7 {
-      if raw_save_file[i * 0x1000 + j] != camelot_header[j] {
-        eprintln!("The input save file is not Golden Sun save file!");
-        process::exit(1);
+    for gs_build_date in GS_BUILD_DATE {
+      if u16::from_le_bytes(gs_build_date) == u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_BUILD_DATE_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_BUILD_DATE_LOCATION_INDEX[1]]]) {
+        is_tbs_save = true;
+        loop_start_index = i;
+        break;
       }
     }
 
-    /* The 8th byte is the slot number, it only show 3 active save data in game.
-       So the values for those 3 active save data are: "0x00", "0x01" and "0x02".
-       And seems "0x10" and other values bigger than "0x02" are for backup save data. */
-    if raw_save_file[i * 0x1000 + 0x07] > 0x02 {
+    if is_tbs_save {
+      break;
+    }
+  }
+
+  (is_tbs_save, loop_start_index)
+}
+
+pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8], loop_start_index: usize) -> HashMap<u8, RawSaveData> {
+  let mut all_possible_headers = Vec::new();
+  // "u8" is slot number. (Start from 0)
+  let mut save_data_map: HashMap<u8, RawSaveData> = HashMap::new();
+  for i in loop_start_index..MAX_LOOP_COUNT {
+    if raw_save_file[i * SAVE_SLOT_SIZE + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX] > MAX_VALID_SLOT_NUMBER {
       continue;
     }
-
-    /* Seems there are three bytes stored save location: "0x410", "0x418" and "0x490".
-       And the values are all the same.
-       Clear data's save location value is 1. */
-    let is_clear_save = raw_save_file[i * 0x1000 + 0x410] == 0x01;
+    let is_clear_save = raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_LOCATION_INDEX] == CLEAR_DATA_SAVE_MAP_VALUE;
     if !is_clear_save && !to_export_all_data {
       continue;
     }
-
     // Get all possible valid save headers first.
-    all_possible_headers.push(HeaderInfo { index: i, priority: u16::from_le_bytes([raw_save_file[i * 0x1000 + 0x0A], raw_save_file[i * 0x1000 + 0x0B]]), slot_number: raw_save_file[i * 0x1000 + 0x07], is_clear: is_clear_save });
-  }
-
-  if blank_save_slot_count == 16 {
-    eprintln!("There is no data in save file!");
-    process::exit(1);
+    all_possible_headers.push(HeaderInfo { index: i, priority: u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + HEADER_PRIORITY_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + HEADER_PRIORITY_LOCATION_INDEX[1]]]), slot_number: raw_save_file[i * SAVE_SLOT_SIZE + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX], is_clear: is_clear_save });
   }
 
   // Get all valid save data.
@@ -180,7 +209,7 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8]) -> Hash
        The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
        0xA40 - 0x10 = 0xA30 */
     let mut save_data = RawSaveData { priority: 0, is_clear: false, data: vec![0; 0xA30] };
-    save_data.set_data(raw_save_file.get(header.index * 0x1000 + 0x10..header.index * 0x1000 + 0xA40).unwrap());
+    save_data.set_data(raw_save_file.get(header.index * SAVE_SLOT_SIZE + 0x10..header.index * SAVE_SLOT_SIZE + 0xA40).unwrap());
     save_data.set_is_clear(header.is_clear);
     save_data.set_priority(header.priority);
     // Key is save slot number: 0, 1, 2
@@ -254,7 +283,7 @@ fn get_save_data(raw_save: &[u8]) -> SaveData {
 
   // u32
   let coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
-  SaveData{ levels, djinn, events, stats, items, coins}
+  SaveData { levels, djinn, events, stats, items, coins }
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
