@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 use crate::enums::PasswordGrade;
 
-/* More reference info/comment about Golden Sun save file from Dyrati (in "Obababot")
+/* Links to other Golden Sun reference guide (save editing):
+   https://gamefaqs.gamespot.com/gba/468548-golden-sun/faqs/43776
+   https://gamefaqs.gamespot.com/gba/561356-golden-sun-the-lost-age/faqs/30811
+   ----------------------------------------------------------------------------------
+   More reference info/comment about GBA Golden Sun series save file from Dyrati (in "Obababot")
 
    https://github.com/Dyrati/obababot/blob/main/obababot/gsfuncs.py
    At line 579, the "get_save_data" function takes raw binary .sav data and returns individual save slots with all of the info from each valid save.
-   The function checks the file at 1000 byte intervals.
+   The function checks the file at 0x1000 byte intervals.
 
    The first 16 bytes of each interval (the header) are organized as follows:
    - 7 bytes for the ASCII string "CAMELOT"
@@ -17,7 +21,15 @@ use crate::enums::PasswordGrade;
    A header is valid if the first 7 bytes spell "CAMELOT", and the slot number is less than 16.
    In the case where multiple headers have the same slot number, use the header with the highest priority number.
    That should leave you with up to 3 valid headers.
-   The next 0x0FF0(GS1)/0x2FF0(GS2) bytes after the header constitute the save data for that file. */
+   The next 0x2FF0 bytes after the header constitute the save data for that file. (Note: GS2 only)
+   ----------------------------------------------------------------------------------
+   Additional reference info/comment about the first Golden Sun save file from Dyrati
+
+   For GS1, each save splits into two parts.
+   In the .sav file, each section is 0x1000 bytes long.
+   However two separate sections are joined together to create one save file.
+   Some sections have slot numbers of 3, 4, or 5,
+   those sections are the second half of slots 0, 1, and 2 respectively. */
 
 /// 7 bytes for the ASCII string "CAMELOT" in each save's header.
 const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
