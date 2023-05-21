@@ -54,12 +54,14 @@ const MAX_LOOP_COUNT: usize = 16;
 /// All stored values are same.
 const FIRST_BUILD_DATE_LOCATION_INDEX: [usize; 2] = [0x36, 0x37];
 
-/// All save map(location) locations  :0x410, 0x418, 0x490
+/// All save map(location) locations  :0x410 to 0x413, 0x418 to 0x41B
+/// Save map data -> Main:Minor
 /// All stored values are same.
-const FIRST_SAVE_MAP_LOCATION_INDEX: usize = 0x410;
+const FIRST_SAVE_MAP_MAIN_LOCATION_INDEX: [usize; 2] = [0x410, 0x411];
+const FIRST_SAVE_MAP_MINOR_LOCATION_INDEX: [usize; 2] = [0x412, 0x413];
 
 /// Clear data's save location value is 1.
-const CLEAR_DATA_SAVE_MAP_VALUE: u8 = 0x01;
+const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02];
 
 /// The 8th byte is the slot number, it only show 3 active save data in game.
 const HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX: usize = 0x07;
@@ -198,7 +200,11 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8], loop_st
     if raw_save_file[i * SAVE_SLOT_SIZE + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX] > MAX_VALID_SLOT_NUMBER {
       continue;
     }
-    let is_clear_save = raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_LOCATION_INDEX] == CLEAR_DATA_SAVE_MAP_VALUE;
+    /* I don't know which part of save data stores the value that identifies the data as a clear data,
+       so I can only check the map location data values */
+    let save_map_main_location_value = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MAIN_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MAIN_LOCATION_INDEX[1]]]);
+    let save_map_minor_location_value= u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MINOR_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MINOR_LOCATION_INDEX[1]]]);
+    let is_clear_save = save_map_main_location_value == CLEAR_DATA_SAVE_MAP_VALUE[0] && save_map_minor_location_value == CLEAR_DATA_SAVE_MAP_VALUE[1];
     if !is_clear_save && !to_export_all_data {
       continue;
     }
