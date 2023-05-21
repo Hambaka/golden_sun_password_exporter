@@ -29,7 +29,8 @@ use crate::enums::PasswordGrade;
    In the .sav file, each section is 0x1000 bytes long.
    However two separate sections are joined together to create one save file.
    Some sections have slot numbers of 3, 4, or 5,
-   those sections are the second half of slots 0, 1, and 2 respectively. */
+   those sections are the second half of slots 0, 1, and 2 respectively.
+   But seems the second half of the save doesn't store the data for generating password. */
 
 /// 7 bytes for the ASCII string "CAMELOT" in each save's header.
 const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
@@ -54,20 +55,28 @@ const MAX_LOOP_COUNT: usize = 16;
 /// All stored values are same.
 const FIRST_BUILD_DATE_LOCATION_INDEX: [usize; 2] = [0x36, 0x37];
 
-/// All save map(location) locations  :0x410 to 0x413, 0x418 to 0x41B
-/// Save map data -> Main:Minor
-/// All stored values are same.
-const FIRST_SAVE_MAP_MAIN_LOCATION_INDEX: [usize; 2] = [0x410, 0x411];
-const FIRST_SAVE_MAP_MINOR_LOCATION_INDEX: [usize; 2] = [0x412, 0x413];
+/* Unused, since now we have a much better way to check if the save data is clear data.
 
-/// Clear data's save location value is 1.
-const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02];
+   All save map(location) locations  :0x410 to 0x413, 0x418 to 0x41B
+   Save map data -> Main:Minor
+   All stored values are same.
+   const FIRST_SAVE_MAP_MAIN_LOCATION_INDEX: [usize; 2] = [0x410, 0x411];
+   const FIRST_SAVE_MAP_MINOR_LOCATION_INDEX: [usize; 2] = [0x412, 0x413];  */
+
+/* Unused, since now we have a much better way to check if the save data is clear data.
+
+   Clear data's save location value is -> 1:2
+   const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02]; */
+
+/// For clear data, its value is 1.
+/// If the save data is not a clear data, its value is 0.
+const CLEAR_DATA_IDENTIFIER_VALUE: u8 = 0x01;
+const CLEAR_DATA_IDENTIFIER_INDEX: usize = 0x31;
 
 /// The 8th byte is the slot number, it only show 3 active save data in game.
 const HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX: usize = 0x07;
 /// The values for 3 'active' save data are: 0x00, 0x01 and 0x02.
-/// And seems 0x10 and other values bigger than 0x02 are for backup save data.
-/// But seems 0x10 is not a valid slot number?
+/// For more information, please see the comment at the beginning of the code.
 const MAX_VALID_SLOT_NUMBER: u8 = 0x02;
 const HEADER_PRIORITY_LOCATION_INDEX: [usize; 2] = [0x0A, 0x0B];
 
@@ -200,11 +209,7 @@ pub fn get_raw_save_data(to_export_all_data: bool, raw_save_file: &[u8], loop_st
     if raw_save_file[i * SAVE_SLOT_SIZE + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX] > MAX_VALID_SLOT_NUMBER {
       continue;
     }
-    /* I don't know which part of save data stores the value that identifies the data as a clear data,
-       so I can only check the map location data values */
-    let save_map_main_location_value = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MAIN_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MAIN_LOCATION_INDEX[1]]]);
-    let save_map_minor_location_value= u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MINOR_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_SAVE_MAP_MINOR_LOCATION_INDEX[1]]]);
-    let is_clear_save = save_map_main_location_value == CLEAR_DATA_SAVE_MAP_VALUE[0] && save_map_minor_location_value == CLEAR_DATA_SAVE_MAP_VALUE[1];
+    let is_clear_save = raw_save_file[i * SAVE_SLOT_SIZE + CLEAR_DATA_IDENTIFIER_INDEX] == CLEAR_DATA_IDENTIFIER_VALUE;
     if !is_clear_save && !to_export_all_data {
       continue;
     }
