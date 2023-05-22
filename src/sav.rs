@@ -79,6 +79,41 @@ const HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX: usize = 0x07;
 /// For more information, please see the comment at the beginning of the code.
 const MAX_VALID_SLOT_NUMBER: u8 = 0x02;
 const HEADER_PRIORITY_LOCATION_INDEX: [usize; 2] = [0x0A, 0x0B];
+/// Valid psynergy items in TBS
+/// C8: Orb of Force
+/// C9: Douse Drop
+/// CA: Frost Jewel
+/// CB: Lifting Gem
+/// CC: Halt Gem
+/// CD: Cloak Ball
+/// CE: Carry Stone
+/// CF: Catch Beads
+const PSYNERGY_ITEMS: [u16; 8] = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF];
+/// Valid stackable items in TBS
+/// B4: Herb
+/// B5: Nut
+/// B6: Vial
+/// B7: Potion
+/// BA: Psy Crystal
+/// BB: Antidote
+/// BC: Elixir
+/// BD: Water of Life
+/// BF: Power Bread
+/// C0: Cookie
+/// C1: Apple
+/// C2: Hard Nut
+/// C3: Mint
+/// C4: Lucky Pepper
+/// E2: Smoke Bomb
+/// E3: Sleep Bomb
+/// E4: Game Ticket
+/// E5: Lucky Medal
+/// EC: Sacred Feather
+/// EE: Oil Drop
+/// EF: Weasel's Claw
+/// F0: Bramble Seed
+/// F1: Crystal Powder
+const STACKABLE_ITEMS: [u16; 23] = [0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xE2, 0xE3, 0xE4, 0xE5, 0xEC, 0xEE, 0xEF, 0xF0, 0xF1];
 
 struct HeaderInfo {
   // Range: 0 <= x < 16
@@ -353,12 +388,11 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   // If password grade is silver or bronze,
   // insert 8 bits representing which of these items your party has.
   if !matches!(grade, PasswordGrade::Gold) {
-    let psynergy_items = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF];
     let mut flags = 0;
     for items_per_person in &save_data.items {
       for item in items_per_person {
         let id = item & 0x1FF;
-        for (j, psynergy_item) in psynergy_items.iter().enumerate() {
+        for (j, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
           if id == *psynergy_item {
             flags |= u32::pow(2, j as u32);
           }
@@ -402,12 +436,10 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
         }
       }
     }
-    // List of all stackable items in GS1.
-    let stackable_items = [0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xE2, 0xE3, 0xE4, 0xE5, 0xEC, 0xEE, 0xEF, 0xF0, 0xF1];
 
     // Insert quantities of stackable items for each energist(adept).
     for items_per_person in &save_data.items {
-      for stackable_item in &stackable_items {
+      for stackable_item in &STACKABLE_ITEMS {
         let mut quantity = 0;
         for item in items_per_person {
           let id = item & 0x1FF;
