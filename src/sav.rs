@@ -30,7 +30,87 @@ use crate::enums::PasswordGrade;
    However two separate sections are joined together to create one save file.
    Some sections have slot numbers of 3, 4, or 5,
    those sections are the second half of slots 0, 1, and 2 respectively.
-   But seems the second half of the save doesn't store the data for generating password. */
+   But seems the second half of the save doesn't store the data for generating password.
+   ----------------------------------------------------------------------------------
+   Golden Sun password generating explanation document by Dyrati
+   Source: https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/
+           https://docs.google.com/spreadsheets/d/1jQ2Zj2F57Fb4hs0pDYLCaZL-qry7gcVxNbhpq0BJDUs/
+
+   Step 1: Convert relevant data into fixed point binary
+
+   Levels: 7 bits for Isaac, Garet, Ivan, Mia
+   Djinn: 7 bits for Venus, Mercury, Mars, Jupiter
+   Events: 1 bit for Hammet, Colosso, Hsu, Deadbeard, Vale, Vault
+   Psy Items: 1 bit for each item in the "PsyItems" list (1 if in party inventory, 0 if not)
+   Coins: 24 bits
+   Stats: 60 bits per character, arranged as follows:
+     11 bits HP, 11 bits PP, 10 bits ATK, 10 bits DEF, 10 bits AGI, 8 bits LCK
+   Item IDs: 9 bits per item, 15 items per character
+   Item Amounts: 5 bits for every item in the "Stackables" list (whether or not item is in inventory), for each character. Subtract 1 from in-game amount
+
+   Step 2: Arrange bits
+
+   Syntax
+     name = value (assign value to name)
+     & (concatenate)
+     name[a:b] (bits of name, from left to right, inclusive, starts at 1)
+     rep(name, x) (name repeated x times)
+
+   Arrangement
+     levelbits = mia_level & ivan_level & garet_level & isaac_level
+     levelbits = levelbits[21:28] & levelbits[13:20] & levelbits[5:12] & levelbits[1:4]
+     djinnbits = venus_djinn & mercury_djinn & mars_djinn & jupiter_djinn
+     djinnbits = djinnbits[25:28] & djinnbits[17:24] & djinnbits[9:16] & djinnbits[1:8]
+     eventbits = 0 & 0 & vault_bit & vale_bit & deadbeard_bit & hsu_bit & colosso_bit & hammet_bit
+     [character]_stats = hp & pp & atk & def & agi & lck
+     stats = isaac_stats & garet_stats & ivan_stats & mia_stats
+     [character]_item_ids = [character]_item1_id & [character]_item2_id & … & [character]_item15_id
+     item_ids = isaac_item_ids & garet_item_ids & ivan_item_ids & mia_item_ids
+     item_ids = item_ids[1:63] & 0
+              & item_ids[64:126] & 0
+              & item_ids[127:189] & 0
+              & item_ids[190:252] & 0
+              & item_ids[253:315] & 0
+              & item_ids[316:378] & 0
+              & item_ids[379:441] & 0
+              & item_ids[442:504] & 0
+              & item_ids[505:540]
+     [character]_item_amounts = [character]_herb_count & [character]_nut_count & [character]_vial_count & … & [character]_crystalpowder_count
+     item_amounts = isaac_item_amounts & garet_item_amounts & ivan_item_amounts & mia_item_amounts
+
+     gold_bits = levelbits & djinnbits & eventbits & stats & rep(0,8) & item_ids & item_amounts & coins & rep(0,40)
+     silver_bits = levelbits & djinnbits & eventbits & psyitems & stats
+     bronze_bits = levelbits & djinnbits & eventbits & psyitems
+
+   Step 3: Generate key from bits
+
+     key = 0xFFFF (16 bit register, meaning that bits exceeding bit 15 are dropped)
+     for byte in bits:
+       key = byte*256 xor key
+       for bit in key:
+           key = key << 1 (bitshift left)
+           if previous operation carried out a 1: key = key + 0xEFDF
+
+     key = key xor 0xFFFF
+
+   Step 4: Encrypt bits with key
+     byte1 = key[1:8]
+     byte2 = key[9:16]
+     append byte1 to bits
+     xor every byte in bits with byte2
+     append byte2 to bits
+
+   Step 5: Divide bits into 6 bit groups.  After every 9 groups, insert a group which is their sum modulo 2^6
+
+   Step 6: Add each group's position to itself, and take result modulo 2^6
+     group_0 = (group_0 + 0) mod 2^6
+     group_1 = (group_1 + 1) mod 2^6
+     …
+     group_n = (group_n + n) mod 2^6
+
+   Step 7: Substitute groups for characters in the "Chars" list
+
+   See the code at https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/main/password.lua */
 
 /// 7 bytes for the ASCII string "CAMELOT" in each save's header.
 const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
