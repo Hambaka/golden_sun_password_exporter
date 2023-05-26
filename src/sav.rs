@@ -252,7 +252,7 @@ impl RawSaveData {
 
 struct SaveData {
   levels: [u8; 4],
-  djinn: [u32; 4],
+  djinns: [u32; 4],
   events: [u8; 6],
   stats: [[u16; 6]; 4],
   items: [[u16; 15]; 4],
@@ -410,7 +410,7 @@ fn gen_save_data_by_raw_save(raw_save: &[u8]) -> SaveData {
   let mut levels = [0; 4];
   // [u32; 4]
   // All: [0x7F, 0x7F, 0x7F, 0x7F]
-  let mut djinn = [0; 4];
+  let mut djinns = [0; 4];
   // [u8; 6]
   // All: [1, 1, 0, 1, 1, 1]
   let mut events = [0; 6];
@@ -424,7 +424,7 @@ fn gen_save_data_by_raw_save(raw_save: &[u8]) -> SaveData {
     levels[i] = raw_save[base + 0xF];
 
     for j in 0..4 {
-      djinn[j] |= u32::from_le_bytes([raw_save[base + 0xF8 + 4 * j], raw_save[base + 0xF9 + 4 * j], raw_save[base + 0xFA + 4 * j], raw_save[base + 0xFB + 4 * j]]);
+      djinns[j] |= u32::from_le_bytes([raw_save[base + 0xF8 + 4 * j], raw_save[base + 0xF9 + 4 * j], raw_save[base + 0xFA + 4 * j], raw_save[base + 0xFB + 4 * j]]);
     }
 
     // HP
@@ -459,7 +459,7 @@ fn gen_save_data_by_raw_save(raw_save: &[u8]) -> SaveData {
 
   // u32
   let coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
-  SaveData { levels, djinn, events, stats, items, coins }
+  SaveData { levels, djinns, events, stats, items, coins }
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
@@ -475,7 +475,7 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   }
 
   for i in (0..=3).rev() {
-    djinn_bits.push_bits(save_data.djinn[i], 7);
+    djinn_bits.push_bits(save_data.djinns[i], 7);
   }
 
   for i in (11..=27).rev().step_by(8) {
@@ -650,7 +650,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
      Mercury: 0001111 (Order: Dew, Tonic, Hail, Spritz, Mist, Sleet, Fizz)
      Mars:    1101110 (Order: Torch, Flash, Ember, Scorch, Corona, Fever, Forge)
      Jupiter: 1001111 (Order: Luff, Squall, Kite, Smog, Zephyr, Breeze, Gust) */
-  let mut djinn: [u32; 4] = [45, 15, 110, 79];
+  let mut djinns: [u32; 4] = [45, 15, 110, 79];
   /* TEMP Default values
      Order is: Hammet, Colosso, Hsu, Deadbeard, Vale, Vault*/
   let mut events: [u8; 6] = [0, 0, 1, 0, 0, 0];
@@ -702,7 +702,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
      0x100 -> 1 0000 0000
      0x3F  ->     11 1111 */
   for (i, data) in password_bytes.iter().enumerate() {
-    bytes_data[i] = (u16::from(*data) + 0x100 - (i as u16) & 0x3F) as u8;
+    bytes_data[i] = ((u16::from(*data) + 0x100 - (i as u16)) & 0x3F) as u8;
   }
 
   /* Remove all checksum bytes.
@@ -716,8 +716,8 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
     }
     PasswordGrade::Silver => {
       // Or you can use: for i in 9..61.step_by(9)
-      for i in 0..6 {
-        bytes_data.remove(CHECKSUM_INDEX[i]);
+      for index in CHECKSUM_INDEX.iter().take(6) {
+        bytes_data.remove(*index);
       }
     }
     PasswordGrade::Bronze => {
@@ -736,11 +736,10 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
   };
   let mut bits = BitArray { bits: Vec::new() };
   let max_size = (size + 2) * 8;
-  let mut j = 0;
-  for i in (0..max_size).step_by(6) {
+
+  for (j, i) in (0..max_size).step_by(6).enumerate() {
     let max = i + 5;
     let entry = bytes_data[j];
-    j += 1;
 
     if max <= max_size {
       bits.push_bits(u32::from(entry), 6);
@@ -814,8 +813,8 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
   for i in (7..=23).rev().step_by(8) {
     level_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }
-  for i in 0..=3 {
-    levels[i] = level_bits.sub_bits_u8(21 - i * 7, 27 - i * 7);
+  for (i, level) in levels.iter_mut().enumerate() {
+    *level = level_bits.sub_bits_u8(21 - i * 7, 27 - i * 7);
   }
 
   /* Get djinn bits, rearrange it to normal order.
@@ -826,23 +825,23 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
     djinn_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }
   djinn_bits.push_bits(u32::from(bits.sub_bits_u8(28, 31)), 4);
-  for i in 0..=3 {
-    djinn[i] = djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7) as u32;
+  for (i, djinn) in djinns.iter_mut().enumerate() {
+    *djinn = djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7) as u32;
   }
 
   /* Get all event bits.
      Order is: Vault, Vale, Deadbeard, Hsu, Colosso, Hammet*/
-  for i in 0..6 {
-    events[i] = bits.bits[61 - i];
+  for (i, event) in events.iter_mut().enumerate() {
+    *event = bits.bits[61 - i];
   }
 
   /* If password grade is silver or bronze, check 8 psynergy items.
      if it does has one, insert it back to Isaac's inventory */
   if !matches!(password_grade, PasswordGrade::Gold) {
     let mut isaac_inventory_start_index = 4;
-    for i in 0..8 {
+    for (i, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
       if bits.bits[62 + i] == 1 {
-        items[0][isaac_inventory_start_index] = PSYNERGY_ITEMS[i];
+        items[0][isaac_inventory_start_index] = *psynergy_item;
         isaac_inventory_start_index += 1;
       }
     }
@@ -850,20 +849,19 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
 
   // If password grade is gold or silver, get stats.
   if !matches!(password_grade, PasswordGrade::Bronze) {
-    let start_index;
-    if matches!(password_grade, PasswordGrade::Gold) {
-      start_index = 62;
+    let start_index = if matches!(password_grade, PasswordGrade::Gold) {
+      62
     } else {
-      start_index = 70;
-    }
+      70
+    };
 
-    for i in 0..4 {
-      stats[i][0] = bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
-      stats[i][1] = bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
-      stats[i][2] = bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
-      stats[i][3] = bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
-      stats[i][4] = bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
-      stats[i][5] = bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
+    for (i, stats_per_person) in stats.iter_mut().enumerate() {
+      stats_per_person[0] = bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
+      stats_per_person[1] = bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
+      stats_per_person[2] = bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
+      stats_per_person[3] = bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
+      stats_per_person[4] = bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
+      stats_per_person[5] = bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
     }
   }
 
@@ -878,24 +876,24 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
 
     let item_id_start_index = 302;
     let stackable_item_quantity_start_index = 842;
-    for i in 0..4 {
-      for j in 0..15 {
+    for (i, items_per_person) in items.iter_mut().enumerate() {
+      for (j, item) in items_per_person.iter_mut().enumerate() {
         let item_id = bits.sub_bits_u16(item_id_start_index + i * 135 + j * 9, item_id_start_index + 8 + i * 135 + j * 9);
         if let Some(stackable_item_index) = stackable_item_index_map.get(&item_id) {
           let item_quantity = bits.sub_bits_u8(stackable_item_quantity_start_index + i * 115 + stackable_item_index * 5, stackable_item_quantity_start_index + 4 + i * 115 + stackable_item_index * 5);
           if item_quantity > 0 {
             let quantity_part = (item_quantity as u16) << 11;
-            items[i][j] = (quantity_part + item_id) as u16;
+            *item = quantity_part + item_id;
           }
         } else {
-          items[i][j] = item_id as u16;
+          *item = item_id;
         }
       }
     }
     coins = bits.sub_bits_u32(bits.get_len() - 24, bits.get_len() - 1);
   }
 
-  SaveData { levels, djinn, events, stats, items, coins }
+  SaveData { levels, djinns, events, stats, items, coins }
 }
 
 pub fn get_is_able_to_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {

@@ -334,11 +334,9 @@ fn main() {
       // Write files.
       if to_convert_password {
         output::write_password_text_file(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
-      } else {
-        if let Some(..) = target_password_grade_option {
-          if !is_no_need_to_downgrade {
-            output::write_password_text_file(&target_password_bytes, password_version, output_dir_str.as_str());
-          }
+      } else if let Some(..) = target_password_grade_option {
+        if !is_no_need_to_downgrade {
+          output::write_password_text_file(&target_password_bytes, password_version, output_dir_str.as_str());
         }
       }
       if to_export_memory_dump {
