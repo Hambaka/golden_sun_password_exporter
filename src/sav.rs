@@ -303,7 +303,7 @@ impl BitArray {
     let mut acc = 0;
     for i in 0..=(max - min) {
       if min < self.bits.len() {
-        acc = 2 * acc + (self.bits[min + i]) as u16;
+        acc = 2 * acc + u16::from(self.bits[min + i]);
       } else {
         acc *= 2;
       }
@@ -316,7 +316,7 @@ impl BitArray {
     let mut acc = 0;
     for i in 0..=(max - min) {
       if min < self.bits.len() {
-        acc = 2 * acc + (self.bits[min + i]) as u32;
+        acc = 2 * acc + u32::from(self.bits[min + i]);
       } else {
         acc *= 2;
       }
@@ -680,7 +680,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
   // Coins, literally.
   let mut coins: u32 = 0;
 
-  let password_grade = get_password_grade_by_len(&password_bytes.len());
+  let password_grade = get_password_grade_by_len(password_bytes.len());
   let mut bytes_data = vec![0_u8; password_bytes.len()];
   /* Remove each byte's position data by minus its index.
      I'm not sure if it's the correct way to do that, but it works.
@@ -780,7 +780,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
     PasswordGrade::Gold => {
       // 16 + 40
       for _i in 0..56 {
-        bits.bits.remove(bits.bits.len() - 1);
+        bits.bits.remove(bits.get_len() - 1);
       }
       // 28 + 28 + 8 + 240 + 8
       for i in (1..=8).rev() {
@@ -797,7 +797,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
     }
     PasswordGrade::Silver | PasswordGrade::Bronze => {
       for _i in 0..16 {
-        bits.bits.remove(bits.bits.len() - 1);
+        bits.bits.remove(bits.get_len() - 1);
       }
       for _i in 0..2 {
         bits.bits.remove(56);
@@ -826,7 +826,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
   }
   djinn_bits.push_bits(u32::from(bits.sub_bits_u8(28, 31)), 4);
   for (i, djinn) in djinns.iter_mut().enumerate() {
-    *djinn = djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7) as u32;
+    *djinn = u32::from(djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7));
   }
 
   /* Get all event bits.
@@ -882,7 +882,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
         if let Some(stackable_item_index) = stackable_item_index_map.get(&item_id) {
           let item_quantity = bits.sub_bits_u8(stackable_item_quantity_start_index + i * 115 + stackable_item_index * 5, stackable_item_quantity_start_index + 4 + i * 115 + stackable_item_index * 5);
           if item_quantity > 0 {
-            let quantity_part = (item_quantity as u16) << 11;
+            let quantity_part = u16::from(item_quantity) << 11;
             *item = quantity_part + item_id;
           }
         } else {
@@ -900,23 +900,19 @@ pub fn get_is_able_to_downgrade(source_grade: PasswordGrade, target_grade: Passw
   match source_grade {
     PasswordGrade::Gold => {
       match target_grade {
-        PasswordGrade::Gold => true,
-        PasswordGrade::Silver => true,
-        PasswordGrade::Bronze => true,
+        PasswordGrade::Gold | PasswordGrade::Silver | PasswordGrade::Bronze => true,
       }
     }
     PasswordGrade::Silver => {
       match target_grade {
         PasswordGrade::Gold => false,
-        PasswordGrade::Silver => true,
-        PasswordGrade::Bronze => true,
+        PasswordGrade::Silver | PasswordGrade::Bronze => true,
       }
     }
     PasswordGrade::Bronze => {
       match target_grade {
-        PasswordGrade::Gold => false,
-        PasswordGrade::Silver => false,
-        PasswordGrade::Bronze => false,
+        PasswordGrade::Gold | PasswordGrade::Silver => false,
+        PasswordGrade::Bronze => true,
       }
     }
   }
@@ -927,22 +923,18 @@ pub fn get_is_no_need_to_downgrade(source_grade: PasswordGrade, target_grade: Pa
     PasswordGrade::Gold => {
       match target_grade {
         PasswordGrade::Gold => true,
-        PasswordGrade::Silver => false,
-        PasswordGrade::Bronze => false,
+        PasswordGrade::Silver | PasswordGrade::Bronze => false,
       }
     }
     PasswordGrade::Silver => {
       match target_grade {
-        PasswordGrade::Gold => true,
-        PasswordGrade::Silver => true,
+        PasswordGrade::Gold | PasswordGrade::Silver => true,
         PasswordGrade::Bronze => false,
       }
     }
     PasswordGrade::Bronze => {
       match target_grade {
-        PasswordGrade::Gold => true,
-        PasswordGrade::Silver => true,
-        PasswordGrade::Bronze => true,
+        PasswordGrade::Gold | PasswordGrade::Silver | PasswordGrade::Bronze => true,
       }
     }
   }

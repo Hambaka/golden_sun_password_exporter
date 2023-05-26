@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic)]
+
 mod enums;
 mod sav;
 mod text;
@@ -290,13 +292,13 @@ fn main() {
       if let Some(grade) = sub_matches.get_one::<String>("grade") {
         let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
         target_password_grade_option = Some(target_password_grade);
-        let source_password_grade = enums::get_password_grade_by_len(&password_bytes.len());
+        let source_password_grade = enums::get_password_grade_by_len(password_bytes.len());
 
-        if !sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
+        if sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
+          is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
+        } else {
           println!("It is not possible to downgrade your password to target password grade!");
           return;
-        } else {
-          is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
         }
       }
 
@@ -367,13 +369,13 @@ fn main() {
       if let Some(grade) = sub_matches.get_one::<String>("grade") {
         let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
         target_password_grade_option = Some(target_password_grade);
-        let source_password_grade = enums::get_password_grade_by_len(&password_bytes.len());
+        let source_password_grade = enums::get_password_grade_by_len(password_bytes.len());
 
-        if !sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
+        if sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
+          is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
+        } else {
           println!("It is not possible to downgrade your password to target password grade!");
           return;
-        } else {
-          is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
         }
       }
 
