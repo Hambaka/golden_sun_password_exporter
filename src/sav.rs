@@ -59,7 +59,7 @@ use crate::enums::PasswordGrade;
    Arrangement
      levelbits = mia_level & ivan_level & garet_level & isaac_level
      levelbits = levelbits[21:28] & levelbits[13:20] & levelbits[5:12] & levelbits[1:4]
-     djinnbits = venus_djinn & mercury_djinn & mars_djinn & jupiter_djinn
+     djinnbits = jupiter_djinn & mars_djinn & mercury_djinn & venus_djinn
      djinnbits = djinnbits[25:28] & djinnbits[17:24] & djinnbits[9:16] & djinnbits[1:8]
      eventbits = 0 & 0 & vault_bit & vale_bit & deadbeard_bit & hsu_bit & colosso_bit & hammet_bit
      [character]_stats = hp & pp & atk & def & agi & lck
@@ -91,7 +91,7 @@ use crate::enums::PasswordGrade;
            key = key << 1 (bitshift left)
            if previous operation carried out a 1: key = key + 0xEFDF
 
-     key = key xor 0xFFFF
+     key = not(key)
 
    Step 4: Encrypt bits with key
      byte1 = key[1:8]
@@ -274,11 +274,37 @@ impl BitArray {
   }
 
   // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  fn sub_bits(&mut self, min: usize, max: usize) -> u8 {
+  fn sub_bits_u8(&mut self, min: usize, max: usize) -> u8 {
     let mut acc = 0;
     for i in 0..=(max - min) {
       if min < self.bits.len() {
         acc = 2 * acc + self.bits[min + i];
+      } else {
+        acc *= 2;
+      }
+    }
+    acc
+  }
+
+  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
+  fn sub_bits_u16(&mut self, min: usize, max: usize) -> u16 {
+    let mut acc = 0;
+    for i in 0..=(max - min) {
+      if min < self.bits.len() {
+        acc = 2 * acc + (self.bits[min + i]) as u16;
+      } else {
+        acc *= 2;
+      }
+    }
+    acc
+  }
+
+  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
+  fn sub_bits_u32(&mut self, min: usize, max: usize) -> u32 {
+    let mut acc = 0;
+    for i in 0..=(max - min) {
+      if min < self.bits.len() {
+        acc = 2 * acc + (self.bits[min + i]) as u32;
       } else {
         acc *= 2;
       }
@@ -441,14 +467,14 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   }
 
   for i in (11..=27).rev().step_by(8) {
-    bits.push_bits(u32::from(level_bits.sub_bits(i - 7, i)), 8);
+    bits.push_bits(u32::from(level_bits.sub_bits_u8(i - 7, i)), 8);
   }
 
-  bits.push_bits(u32::from(level_bits.sub_bits(0, 3)), 4);
-  bits.push_bits(u32::from(djinn_bits.sub_bits(24, 27)), 4);
+  bits.push_bits(u32::from(level_bits.sub_bits_u8(0, 3)), 4);
+  bits.push_bits(u32::from(djinn_bits.sub_bits_u8(24, 27)), 4);
 
   for i in (7..=23).rev().step_by(8) {
-    bits.push_bits(u32::from(djinn_bits.sub_bits(i - 7, i)), 8);
+    bits.push_bits(u32::from(djinn_bits.sub_bits_u8(i - 7, i)), 8);
   }
 
   for i in (0..=7).rev() {
@@ -542,7 +568,7 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   let mut x_sum = 0xFFFF_u64;
 
   for i in 0..size {
-    let byte = u64::from(bits.sub_bits(8 * i, 8 * i + 7));
+    let byte = u64::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
     x_sum ^= byte << 8;
     for _j in 0..8 {
       if (x_sum & 0x8000) == 0 {
@@ -559,7 +585,7 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   bits.push_bits(xor_value, 8);
 
   for i in 0..=size {
-    let byte = u32::from(bits.sub_bits(8 * i, 8 * i + 7));
+    let byte = u32::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
     bits.replace_bits(byte ^ xor_value, 8, 8 * i);
   }
 
@@ -573,11 +599,11 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
     let entry;
 
     if max <= bits.get_len() {
-      entry = bits.sub_bits(i, max);
+      entry = bits.sub_bits_u8(i, max);
     } else {
       let last_left_shift = max - max_size + 1;
       max = bits.get_len() - 1;
-      entry = bits.sub_bits(i, max) << last_left_shift;
+      entry = bits.sub_bits_u8(i, max) << last_left_shift;
     }
 
     password_bytes.push(entry);
