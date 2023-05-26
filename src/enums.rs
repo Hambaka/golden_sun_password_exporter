@@ -23,12 +23,21 @@ pub enum CheatVersion {
   Italian,
 }
 
-pub fn get_password_grade(grade_arg_str: &str) -> PasswordGrade {
+pub fn get_password_grade_by_arg(grade_arg_str: &str) -> PasswordGrade {
   match grade_arg_str {
     "s" => PasswordGrade::Silver,
     "b" => PasswordGrade::Bronze,
     // Include "g"
     _ => PasswordGrade::Gold,
+  }
+}
+
+pub fn get_password_grade_by_len(password_bytes_len: &usize) -> PasswordGrade {
+  match password_bytes_len {
+    260 => PasswordGrade::Gold,
+    61 => PasswordGrade::Silver,
+    16 => PasswordGrade::Bronze,
+    _ => unreachable!(),
   }
 }
 

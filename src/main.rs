@@ -31,7 +31,7 @@ fn main() {
         )
         .arg(
           arg!(
-            -g --grade <VALUE> "Password grade"
+            -g --grade <VALUE> "Target password grade"
           )
             .required(true)
         )
@@ -88,6 +88,12 @@ fn main() {
         )
         .arg(
           arg!(
+            -g --grade <VALUE> "Target password grade"
+          )
+            .required(false)
+        )
+        .arg(
+          arg!(
             -t --text "Convert password to another version"
           )
             .action(ArgAction::SetTrue)
@@ -109,7 +115,7 @@ fn main() {
         .group(
           ArgGroup::new("txt_args")
             .required(true)
-            .args(["text", "memory", "cheat"])
+            .args(["grade", "text", "memory", "cheat"])
             .multiple(true)
         )
         .arg(
@@ -133,6 +139,12 @@ fn main() {
         )
         .arg(
           arg!(
+            -g --grade <VALUE> "Target password grade"
+          )
+            .required(false)
+        )
+        .arg(
+          arg!(
             -t --text <VALUE> "Generate password text file"
           )
             .required(false)
@@ -146,7 +158,7 @@ fn main() {
         .group(
           ArgGroup::new("dmp_args")
             .required(true)
-            .args(["text", "cheat"])
+            .args(["grade", "text", "cheat"])
             .multiple(true)
         )
         .arg(
@@ -208,7 +220,7 @@ fn main() {
 
       // "grade" argument.
       let grade = sub_matches.get_one::<String>("grade").unwrap();
-      let password_grade = enums::get_password_grade(grade.as_str());
+      let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
 
       // "text" argument.
       let mut password_version_option: Option<enums::PasswordVersion> = None;
@@ -235,7 +247,7 @@ fn main() {
 
       // Write files.
       for (key, val) in &save_data_map {
-        let password_bytes = sav::get_password_bytes(val.get_data(), password_grade);
+        let password_bytes = sav::get_password_bytes_by_raw_save(val.get_data(), target_password_grade);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3
         let sub_dir_str = output::create_sav_sub_dir(*key + 1, val.get_is_clear(), output_dir_str.as_str());
 
@@ -272,6 +284,22 @@ fn main() {
         return;
       }
 
+      // "grade" argument.
+      let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
+      let mut is_no_need_to_downgrade = false;
+      if let Some(grade) = sub_matches.get_one::<String>("grade") {
+        let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
+        target_password_grade_option = Some(target_password_grade);
+        let source_password_grade = enums::get_password_grade_by_len(&password_bytes.len());
+
+        if !sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
+          println!("It is not possible to downgrade your password to target password grade!");
+          return;
+        } else {
+          is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
+        }
+      }
+
       // "text" flag.
       let to_convert_password = sub_matches.get_flag("text");
 
@@ -292,15 +320,32 @@ fn main() {
         output_dir_str = output::create_output_dir(txt_input_path, false);
       }
 
+      let target_password_bytes;
+      if let Some(target_password_grade) = target_password_grade_option {
+        if is_no_need_to_downgrade {
+          target_password_bytes = password_bytes;
+        } else {
+          target_password_bytes = sav::get_password_bytes_by_password_bytes(&password_bytes, target_password_grade);
+        }
+      } else {
+        target_password_bytes = password_bytes;
+      }
+
       // Write files.
       if to_convert_password {
-        output::write_password_text_file(&password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
+        output::write_password_text_file(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
+      } else {
+        if let Some(..) = target_password_grade_option {
+          if !is_no_need_to_downgrade {
+            output::write_password_text_file(&target_password_bytes, password_version, output_dir_str.as_str());
+          }
+        }
       }
       if to_export_memory_dump {
-        output::write_memory_dump_file(&password_bytes, output_dir_str.as_str());
+        output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
       }
       if let Some(cheat_version) = cheat_version_option {
-        output::write_cheat_file(&password_bytes, cheat_version, output_dir_str.as_str());
+        output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
       }
     }
     // "dmp" subcommand
@@ -317,6 +362,22 @@ fn main() {
       }
       let mut password_bytes = Vec::new();
       input_file.read_to_end(&mut password_bytes).unwrap();
+
+      // "grade" argument.
+      let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
+      let mut is_no_need_to_downgrade = false;
+      if let Some(grade) = sub_matches.get_one::<String>("grade") {
+        let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
+        target_password_grade_option = Some(target_password_grade);
+        let source_password_grade = enums::get_password_grade_by_len(&password_bytes.len());
+
+        if !sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
+          println!("It is not possible to downgrade your password to target password grade!");
+          return;
+        } else {
+          is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
+        }
+      }
 
       // "text" argument.
       let mut password_version_option: Option<enums::PasswordVersion> = None;
@@ -338,12 +399,28 @@ fn main() {
         output_dir_str = output::create_output_dir(dmp_input_path, false);
       }
 
+      let target_password_bytes;
+      if let Some(target_password_grade) = target_password_grade_option {
+        if is_no_need_to_downgrade {
+          target_password_bytes = password_bytes;
+        } else {
+          target_password_bytes = sav::get_password_bytes_by_password_bytes(&password_bytes, target_password_grade);
+        }
+      } else {
+        target_password_bytes = password_bytes;
+      }
+
       // Write files.
+      if let Some(..) = target_password_grade_option {
+        if !is_no_need_to_downgrade {
+          output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
+        }
+      }
       if let Some(password_version) = password_version_option {
-        output::write_password_text_file(&password_bytes, password_version, output_dir_str.as_str());
+        output::write_password_text_file(&target_password_bytes, password_version, output_dir_str.as_str());
       }
       if let Some(cheat_version) = cheat_version_option {
-        output::write_cheat_file(&password_bytes, cheat_version, output_dir_str.as_str());
+        output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
       }
     }
     _ => unreachable!(),
