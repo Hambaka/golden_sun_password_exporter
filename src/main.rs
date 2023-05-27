@@ -1,5 +1,3 @@
-#![warn(clippy::all, clippy::pedantic)]
-
 mod enums;
 mod sav;
 mod text;
@@ -13,7 +11,7 @@ use clap::{arg, ArgAction, ArgGroup, Command, value_parser};
 
 fn main() {
   let matches = Command::new("Golden Sun Password Exporter")
-    .version("0.2.2")
+    .version("v0.3.0")
     .author("Hambaka")
     .about("A simple tool for a GBA game called Golden Sun\nYou can use this tool to export Golden Sun password to a text file/memory dump binary file/cheat file")
     .allow_negative_numbers(true)
