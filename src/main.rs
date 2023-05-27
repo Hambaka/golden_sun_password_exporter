@@ -11,7 +11,7 @@ use clap::{arg, ArgAction, ArgGroup, Command, value_parser};
 
 fn main() {
   let matches = Command::new("Golden Sun Password Exporter")
-    .version("v0.3.0")
+    .version("v0.4.0")
     .author("Hambaka")
     .about("A simple tool for a GBA game called Golden Sun\nYou can use this tool to export Golden Sun password to a text file/memory dump binary file/cheat file")
     .allow_negative_numbers(true)
@@ -61,10 +61,17 @@ fn main() {
           )
             .required(false)
         )
+        .arg(
+          arg!(
+            -e --export "Export game data to a text file for Dyrati's \"Golden Sun Password Generator\" spreadsheet"
+          )
+            .action(ArgAction::SetTrue)
+            .required(false)
+        )
         .group(
           ArgGroup::new("sav_args")
             .required(true)
-            .args(["text", "memory", "cheat"])
+            .args(["text", "memory", "cheat", "export"])
             .multiple(true)
         )
         .arg(
@@ -112,10 +119,17 @@ fn main() {
           )
             .required(false)
         )
+        .arg(
+          arg!(
+            -e --export "Export game data to a text file for Dyrati's \"Golden Sun Password Generator\" spreadsheet"
+          )
+            .action(ArgAction::SetTrue)
+            .required(false)
+        )
         .group(
           ArgGroup::new("txt_args")
             .required(true)
-            .args(["grade", "text", "memory", "cheat"])
+            .args(["grade", "text", "memory", "cheat", "export"])
             .multiple(true)
         )
         .arg(
@@ -155,10 +169,17 @@ fn main() {
           )
             .required(false)
         )
+        .arg(
+          arg!(
+            -e --export "Export game data to a text file for Dyrati's \"Golden Sun Password Generator\" spreadsheet"
+          )
+            .action(ArgAction::SetTrue)
+            .required(false)
+        )
         .group(
           ArgGroup::new("dmp_args")
             .required(true)
-            .args(["grade", "text", "cheat"])
+            .args(["grade", "text", "cheat", "export"])
             .multiple(true)
         )
         .arg(
@@ -237,6 +258,9 @@ fn main() {
         cheat_version_option = Some(enums::get_cheat_version(cheat.as_str()));
       }
 
+      // "export" flag.
+      let to_export_data_text = sub_matches.get_flag("export");
+
       // Create main output directory.
       let output_dir_str;
       if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
@@ -259,6 +283,9 @@ fn main() {
         }
         if let Some(cheat_version) = cheat_version_option {
           output::write_cheat_file(&password_bytes, cheat_version, sub_dir_str.as_str());
+        }
+        if to_export_data_text {
+          output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_raw_save(val.get_data()).as_str(), sub_dir_str.as_str());
         }
       }
     }
@@ -312,6 +339,9 @@ fn main() {
         cheat_version_option = Some(enums::get_cheat_version(cheat.as_str()));
       }
 
+      // "export" flag.
+      let to_export_data_text = sub_matches.get_flag("export");
+
       // Create output directory.
       let output_dir_str;
       if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
@@ -344,6 +374,9 @@ fn main() {
       }
       if let Some(cheat_version) = cheat_version_option {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
+      }
+      if to_export_data_text {
+        output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(&target_password_bytes).as_str(), output_dir_str.as_str());
       }
     }
     // "dmp" subcommand
@@ -389,6 +422,9 @@ fn main() {
         cheat_version_option = Some(enums::get_cheat_version(cheat.as_str()));
       }
 
+      // "export" flag.
+      let to_export_data_text = sub_matches.get_flag("export");
+
       // Create output directory.
       let output_dir_str;
       if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
@@ -419,6 +455,9 @@ fn main() {
       }
       if let Some(cheat_version) = cheat_version_option {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
+      }
+      if to_export_data_text {
+        output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(&target_password_bytes).as_str(), output_dir_str.as_str());
       }
     }
     _ => unreachable!(),

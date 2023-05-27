@@ -206,6 +206,65 @@ const STACKABLE_ITEMS: [u16; 23] = [0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0x
 ///  209 - 20, 219 - 21, 229 - 22, 239 - 23, 249 - 24,
 ///  259 - 25
 const CHECKSUM_INDEX: [usize; 26] = [9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 144, 153, 162, 171, 180, 189, 198, 207, 216, 225, 234];
+const VENUS_DJINN_NAMES: [&str; 7] = ["Flint", "Granite", "Quartz", "Vine", "Sap", "Ground", "Bane"];
+const MERCURY_DJINN_NAMES: [&str; 7] = ["Fizz", "Sleet", "Mist", "Spritz", "Hail", "Tonic", "Dew"];
+const MARS_DJINN_NAMES: [&str; 7] = ["Forge", "Fever", "Corona", "Scorch", "Ember", "Flash", "Torch"];
+const JUPITER_DJINN_NAMES: [&str; 7] = ["Gust", "Breeze", "Zephyr", "Smog", "Kite", "Squall", "Luff"];
+/// Squire, Guard, Wind Seer, Water Seer
+const DEFAULT_CLASS_MULTIPLIERS: [[f64; 6]; 4] = [
+  [1.1, 0.8, 1.1, 1.0, 1.1, 1.0],
+  [1.1, 0.8, 1.0, 1.1, 0.7, 1.0],
+  [0.8, 1.4, 0.8, 0.9, 1.3, 1.1],
+  [0.9, 1.3, 0.9, 1.0, 0.8, 1.3]
+];
+const ITEM_NAMES: [&str; 460] = [
+  "Long Sword", "Broad Sword", "Claymore", "Great Sword", "Shamshir", "Silver Blade", "Fire Brand", "Arctic Blade", "Gaia Blade", "Sol Blade",
+  "Muramasa", "?", "?", "?", "Machete", "Short Sword", "Hunter's Sword", "Battle Rapier", "Master Rapier", "Ninja Blade",
+  "Swift Sword", "Elven Rapier", "Assassin Blade", "Mystery Blade", "Kikuichimonji", "Masamune", "Bandit's Sword", "?", "?", "?",
+  "Battle Axe", "Broad Axe", "Great Axe", "Dragon Axe", "Giant Axe", "Vulcan Axe", "Burning Axe", "Demon Axe", "?", "?",
+  "?", "?", "Mace", "Heavy Mace", "Battle Mace", "War Mace", "Righteous Mace", "Grievous Mace", "Blessed Mace", "Wicked Mace",
+  "?", "?", "?", "?", "Wooden Stick", "Magic Rod", "Witch's Wand", "Blessed Ankh", "Psynergy Rod", "Frost Wand",
+  "Angelic Ankh", "Demonic Staff", "Crystal Rod", "Zodiac Wand", "Shaman's Rod", "?", "?", "?", "?", "?",
+  "?", "?", "?", "?", "Leather Armor", "Psynergy Armor", "Chain Mail", "Armored Shell", "Plate Mail", "Steel Armor",
+  "Spirit Armor", "Dragon Scales", "Demon Mail", "Asura's Armor", "Spiked Armor", "?", "?", "?", "Cotton Shirt", "Travel Vest",
+  "Fur Coat", "Adept's Clothes", "Elven Shirt", "Silver Vest", "Water Jacket", "Storm Gear", "Kimono", "Ninja Garb", "?", "?",
+  "?", "?", "One-Piece Dress", "Travel Robe", "Silk Robe", "China Dress", "Jerkin", "Cocktail Dress", "Blessed Robe", "Magical Cassock",
+  "Mysterious Robe", "Feathered Robe", "Oracle's Robe", "?", "?", "?", "?", "Wooden Shield", "Bronze Shield", "Iron Shield",
+  "Knight's Shield", "Mirrored Shield", "Dragon Shield", "Earth Shield", "?", "?", "Padded Gloves", "Leather Gloves", "Gauntlets", "Vambrace",
+  "War Gloves", "Spirit Gloves", "Battle Gloves", "Aura Gloves", "?", "Leather Armlet", "Armlet", "Heavy Armlet", "Silver Armlet", "Spirit Armlet",
+  "Virtuous Armlet", "Guardian Armlet", "?", "?", "Open Helm", "Bronze Helm", "Iron Helm", "Steel Helm", "Silver Helm", "Knight's Helm",
+  "Warrior's Helm", "Adept's Helm", "?", "?", "?", "Leather Cap", "Wooden Cap", "Mail Cap", "Jeweled Crown", "Ninja Hood",
+  "Lucky Cap", "Thunder Crown", "Prophet's Hat", "Lure Cap", "?", "Circlet", "Silver Circlet", "Guardian Circlet", "Platinum Circlet", "Mythril Circlet",
+  "Glittering Tiara", "?", "?", "?", "?", "?", "?", "?", "?", "Herb",
+  "Nut", "Vial", "Potion", "Hermes' Water", "Empty Bottle", "Psy Crystal", "Antidote", "Elixir", "Water of Life", "Mist Potion",
+  "Power Bread", "Cookie", "Apple", "Hard Nut", "Mint", "Lucky Pepper", "?", "Lash Pebble", "Pound Cube", "Orb of Force",
+  "Douse Drop", "Frost Jewel", "Lifting Gem", "Halt Gem", "Cloak Ball", "Carry Stone", "Catch Beads", "Tremor Bit", "Scoop Gem", "Cyclone Chip",
+  "?", "?", "Burst Brooch", "Grindstone", "Hover Jade", "?", "Teleport Lapis", "?", "?", "Venus Star",
+  "Mercury Star", "Mars Star", "Jupiter Star", "Mythril Bag", "Small Jewel", "Smoke Bomb", "Sleep Bomb", "Game Ticket", "Lucky Medal", "Dragon's Eye",
+  "Bone", "Anchor Charm", "Corn", "Cell Key", "Boat Ticket", "Sacred Feather", "Mystic Draught", "Oil Drop", "Weasel's Claw", "Bramble Seed",
+  "Crystal Powder", "Black Orb", "Red Key", "Blue Key", "Mythril Bag", "Jupiter Star", "Mars Star", "?", "?", "Mythril Shirt",
+  "Silk Shirt", "Running Shirt", "?", "?", "?", "Hyper Boots", "Quick Boots", "Fur Boots", "Turtle Boots", "?",
+  "?", "Adept Ring", "War Ring", "Sleep Ring", "Healing Ring", "Unicorn Ring", "Fairy Ring", "Cleric's Ring", "?", "?",
+  "?", "Huge Sword", "Mythril Blade", "Levatine", "Darksword", "Excalibur", "Robber's Blade", "Soul Brand", "Storm Brand", "Hestia Blade",
+  "Lightning Sword", "Rune Blade", "Cloud Brand", "?", "Sylph Rapier", "Burning Sword", "Pirate's Sword", "Corsair's Edge", "Pirate's Sabre", "Hypnos' Sword",
+  "Mist Sabre", "Phaeton's Blade", "Tisiphone Edge", "?", "Apollo's Axe", "Gaia's Axe", "Stellar Axe", "Captain's Axe", "Viking Axe", "Disk Axe",
+  "Themis' Axe", "Mighty Axe", "Tartarus Axe", "?", "Comet Mace", "Tungsten Mace", "Demon Mace", "Hagbone Mace", "Blow Mace", "Rising Mace",
+  "Thanatos Mace", "?", "Cloud Wand", "Salamander Rod", "Nebula Wand", "Dracomace", "Glower Staff", "Goblin's Rod", "Meditation Rod", "Fireman's Pole",
+  "Atropos' Rod", "Lachesis' Rule", "Clotho's Distaff", "Staff of Anubis", "?", "Trident", "?", "Planet Armor", "Dragon Mail", "Chronos Mail",
+  "Stealth Armor", "Xylion Armor", "Ixion Mail", "Phantasmal Mail", "Erebus Armor", "Valkyrie Mail", "?", "Faery Vest", "Mythril Clothes", "Full Metal Vest",
+  "Wild Coat", "Floral Dress", "Festival Coat", "Erinyes Tunic", "Triton's Ward", "?", "Dragon Robe", "Ardagh Robe", "Muni Robe", "Aeolian Cassock",
+  "Iris Robe", "?", "Luna Shield", "Dragon Shield", "Flame Shield", "Terra Shield", "Cosmos Shield", "Fujin Shield", "Aegis Shield", "?",
+  "Aerial Gloves", "Titan Gloves", "Big Bang Gloves", "Crafted Gloves", "Riot Gloves", "Spirit Gloves", "?", "Clear Bracelet", "Mythril Armlet", "Bone Armlet",
+  "Jester's Armlet", "Leda's Bracelet", "?", "Dragon Helm", "Mythril Helm", "Fear Helm", "Millenium Helm", "Viking Helm", "Gloria Helm", "Minerva Helm",
+  "?", "Floating Hat", "Nurse's Cap", "Thorn Crown", "Otafuku Mask", "Hiotoko Mask", "Crown of Glory", "Alastor's Hood", "?", "Pure Circlet",
+  "Astral Circlet", "Psychic Circlet", "Demon Circlet", "Clarity Circlet", "Brilliant Circlet", "Berserker Band", "?", "Divine Camisole", "Herbed Shirt", "Golden Shirt",
+  "Casual Shirt", "Leather Boots", "Dragon Boots", "Safety Boots", "Knight's Greave", "Silver Greave", "Ninja Sandals", "Golden Boots", "Spirit Ring", "Stardust Ring",
+  "Aroma Ring", "Rainbow Ring", "Soul Ring", "Guardian Ring", "Golden Ring", "?", "Rusty Sword", "Rusty Sword", "Rusty Sword", "Rusty Sword",
+  "Rusty Axe", "Rusty Axe", "Rusty Mace", "Rusty Mace", "Rusty Staff", "Rusty Staff", "Rusty Staff", "?", "Tear Stone", "Star Dust",
+  "Sylph Feather", "Dragon Skin", "Salamander Tail", "Golem Core", "Mythril Silver", "Dark Matter", "Orihalcon", "?", "Right Prong", "Left Prong",
+  "Center Prong", "?", "Mysterious Card", "Trainer's Whip", "Tomegathericon", "?", "?", "Healing Fungus", "Laughing Fungus", "Signal Whistle",
+  "Dancing Idol", "Pretty Stone", "Red Cloth", "Milk", "Li'l Turtle", "Aquarius Stone", "Large Bread", "Sea God's Tear", "Ruin Key", "Magma Ball"
+];
 
 struct HeaderInfo {
   // Range: 0 <= x < 16
@@ -252,7 +311,7 @@ impl RawSaveData {
 
 struct SaveData {
   levels: [u8; 4],
-  djinns: [u32; 4],
+  djinn: [u32; 4],
   events: [u8; 6],
   stats: [[u16; 6]; 4],
   items: [[u16; 15]; 4],
@@ -410,7 +469,7 @@ fn gen_save_data_by_raw_save(raw_save: &[u8]) -> SaveData {
   let mut levels = [0; 4];
   // [u32; 4]
   // All: [0x7F, 0x7F, 0x7F, 0x7F]
-  let mut djinns = [0; 4];
+  let mut djinn = [0; 4];
   // [u8; 6]
   // All: [1, 1, 0, 1, 1, 1]
   let mut events = [0; 6];
@@ -424,7 +483,7 @@ fn gen_save_data_by_raw_save(raw_save: &[u8]) -> SaveData {
     levels[i] = raw_save[base + 0xF];
 
     for j in 0..4 {
-      djinns[j] |= u32::from_le_bytes([raw_save[base + 0xF8 + 4 * j], raw_save[base + 0xF9 + 4 * j], raw_save[base + 0xFA + 4 * j], raw_save[base + 0xFB + 4 * j]]);
+      djinn[j] |= u32::from_le_bytes([raw_save[base + 0xF8 + 4 * j], raw_save[base + 0xF9 + 4 * j], raw_save[base + 0xFA + 4 * j], raw_save[base + 0xFB + 4 * j]]);
     }
 
     // HP
@@ -459,7 +518,7 @@ fn gen_save_data_by_raw_save(raw_save: &[u8]) -> SaveData {
 
   // u32
   let coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
-  SaveData { levels, djinns, events, stats, items, coins }
+  SaveData { levels, djinn, events, stats, items, coins }
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
@@ -475,7 +534,7 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   }
 
   for i in (0..=3).rev() {
-    djinn_bits.push_bits(save_data.djinns[i], 7);
+    djinn_bits.push_bits(save_data.djinn[i], 7);
   }
 
   for i in (11..=27).rev().step_by(8) {
@@ -650,7 +709,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
      Mercury: 0001111 (Order: Dew, Tonic, Hail, Spritz, Mist, Sleet, Fizz)
      Mars:    1101110 (Order: Torch, Flash, Ember, Scorch, Corona, Fever, Forge)
      Jupiter: 1001111 (Order: Luff, Squall, Kite, Smog, Zephyr, Breeze, Gust) */
-  let mut djinns: [u32; 4] = [45, 15, 110, 79];
+  let mut djinn: [u32; 4] = [45, 15, 110, 79];
   /* TEMP Default values
      Order is: Hammet, Colosso, Hsu, Deadbeard, Vale, Vault*/
   let mut events: [u8; 6] = [0, 0, 1, 0, 0, 0];
@@ -784,7 +843,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
       }
       // 28 + 28 + 8 + 240 + 8
       for i in (1..=8).rev() {
-        bits.bits.remove(312 + i * 64);
+        bits.bits.remove(311 + i * 64);
       }
       // 28 + 28 + 8 + 240
       for _i in 0..8 {
@@ -825,8 +884,8 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
     djinn_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }
   djinn_bits.push_bits(u32::from(bits.sub_bits_u8(28, 31)), 4);
-  for (i, djinn) in djinns.iter_mut().enumerate() {
-    *djinn = u32::from(djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7));
+  for (i, djinn_data) in djinn.iter_mut().enumerate() {
+    *djinn_data = u32::from(djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7));
   }
 
   /* Get all event bits.
@@ -893,7 +952,7 @@ fn gen_save_data_by_password_bytes(password_bytes: &[u8]) -> SaveData {
     coins = bits.sub_bits_u32(bits.get_len() - 24, bits.get_len() - 1);
   }
 
-  SaveData { levels, djinns, events, stats, items, coins }
+  SaveData { levels, djinn, events, stats, items, coins }
 }
 
 pub fn get_is_able_to_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {
@@ -943,4 +1002,186 @@ pub fn get_is_no_need_to_downgrade(source_grade: PasswordGrade, target_grade: Pa
 pub fn get_password_bytes_by_password_bytes(password_bytes: &[u8], grade: PasswordGrade) -> Vec<u8> {
   let save_data = gen_save_data_by_password_bytes(password_bytes);
   gen_password_bytes(grade, &save_data)
+}
+
+fn gen_exported_data_for_dyrati_sheet(save_data: &SaveData) -> String {
+  let mut exported_text = String::new();
+  // Text start
+  exported_text.push_str("Exported text data for \"Golden Sun Password Generator\" spreadsheet by Dyrati\n");
+  exported_text.push_str("Source: https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/\n");
+  exported_text.push_str("Spreadsheet link: https://docs.google.com/spreadsheets/d/1jQ2Zj2F57Fb4hs0pDYLCaZL-qry7gcVxNbhpq0BJDUs/\n");
+  exported_text.push_str("For Windows users, I recommend just using Windows notepad to open this file.\n");
+  exported_text.push_str("Copy the text between \"start\" and \"end\", and paste it into the specified range of the spreadsheet\n\n\n\n");
+
+  // Levels
+  exported_text.push_str("Levels\nIsaac, Garet, Ivan, Mia\nRange in spreadsheet -> B7:E7\n");
+  exported_text.push_str("--------start--------\n");
+  for (i, level) in save_data.levels.iter().enumerate() {
+    if i < save_data.levels.len() - 1 {
+      exported_text.push_str(format!("{level}\t").as_str());
+    } else {
+      exported_text.push_str(format!("{level}\n").as_str());
+    }
+  }
+  exported_text.push_str("---------end---------\n\n\n\n");
+
+  // Djinn
+  exported_text.push_str("Djinn\nVenus, Mars, Jupiter, Mercury\nRange in spreadsheet -> B11:E17\n");
+  exported_text.push_str("--------------------start--------------------\n");
+  let mut venus_djinn_bits = BitArray { bits: Vec::new() };
+  let mut mercury_djinn_bits = BitArray { bits: Vec::new() };
+  let mut mars_djinn_bits = BitArray { bits: Vec::new() };
+  let mut jupiter_djinn_bits = BitArray { bits: Vec::new() };
+
+  venus_djinn_bits.push_bits(save_data.djinn[0], 7);
+  mercury_djinn_bits.push_bits(save_data.djinn[1], 7);
+  mars_djinn_bits.push_bits(save_data.djinn[2], 7);
+  jupiter_djinn_bits.push_bits(save_data.djinn[3], 7);
+
+  for i in 0..7 {
+    if venus_djinn_bits.bits[i] == 1 {
+      exported_text.push_str(VENUS_DJINN_NAMES[i]);
+    }
+    exported_text.push('\t');
+    if mars_djinn_bits.bits[i] == 1 {
+      exported_text.push_str(MARS_DJINN_NAMES[i]);
+    }
+    exported_text.push('\t');
+    if jupiter_djinn_bits.bits[i] == 1 {
+      exported_text.push_str(JUPITER_DJINN_NAMES[i]);
+    }
+    exported_text.push('\t');
+    if mercury_djinn_bits.bits[i] == 1 {
+      exported_text.push_str(MERCURY_DJINN_NAMES[i]);
+    }
+    exported_text.push('\n');
+  }
+  exported_text.push_str("---------------------end---------------------\n\n\n\n");
+
+  // Events
+  exported_text.push_str("Events\nThe order from top to bottom are:\nSave Hammet, Beat Colosso, Save Hsu, Beat Deadbeard, Return to Vale, Return to Vault\n\n");
+  exported_text.push_str("Note: The value of \"Save Hsu\" is the opposite of each other\n");
+  exported_text.push_str("      in the \"Golden Sun Password Generator\" GUI software developed by Paulygon and\n");
+  exported_text.push_str("      in the \"Golden Sun Password Generator\" spreadsheet by Dyrati.\n\n");
+  exported_text.push_str("Range in spreadsheet -> D20:D25\n");
+  exported_text.push_str("---start---\n");
+  for (i, event) in save_data.events.iter().enumerate() {
+    if i == 2 {
+      let inverted_event = (i ^ 1) & 1;
+      exported_text.push_str(format!("{inverted_event}\n").as_str());
+    } else {
+      exported_text.push_str(format!("{event}\n").as_str());
+    }
+  }
+  exported_text.push_str("----end----\n\n\n\n");
+
+  // Base Stats
+  exported_text.push_str("Base stats\nIsaac, Garet, Ivan, Mia\n");
+  exported_text.push_str("The order from top to bottom are:\nHP, PP, ATK, DEF, AGI, LCK\n\n");
+  exported_text.push_str("Note: \"Base stats\" is the stats without any djinn, items, or class multipliers.\n");
+  exported_text.push_str("      Each character has a default class and apply class multiplier automatically in game,\n");
+  exported_text.push_str("      so that means you cannot see these values in game.\n");
+  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Base stats\".\n");
+  exported_text.push_str("      (Although \"Base Stats\" may not be very convenient to use, they are recommended and will not cause any problems)\n\n");
+  exported_text.push_str("Range in spreadsheet -> G4:J9\n");
+  exported_text.push_str("---------start---------\n");
+  for i in 0..6 {
+    exported_text.push_str(format!("{}\t", save_data.stats[0][i]).as_str());
+    exported_text.push_str(format!("{}\t", save_data.stats[1][i]).as_str());
+    exported_text.push_str(format!("{}\t", save_data.stats[2][i]).as_str());
+    exported_text.push_str(format!("{}\n", save_data.stats[3][i]).as_str());
+  }
+  exported_text.push_str("----------end----------\n\n\n\n");
+
+  // Stats, there may be some problems in this.
+  exported_text.push_str("Stats\nIsaac, Garet, Ivan, Mia\n");
+  exported_text.push_str("The order from top to bottom are:\nHP, PP, ATK, DEF, AGI, LCK\n\n");
+  exported_text.push_str("Note: \"Stats\" is the stats with no items equipped, and all djinn on standby, but with class multipliers.\n");
+  exported_text.push_str("      That means these are the stats values you can see in the game\n");
+  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Stats\".\n");
+  exported_text.push_str("      (Using these stats *may* cause problems. If you encounter problems, please use \"Base Stats\")\n\n");
+  exported_text.push_str("Range in spreadsheet -> G4:J9\n");
+  exported_text.push_str("---------start---------\n");
+  for i in 0..6 {
+    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as i32).as_str());
+    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as i32).as_str());
+    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as i32).as_str());
+    exported_text.push_str(format!("{}\n", (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as i32).as_str());
+  }
+  exported_text.push_str("----------end----------\n\n\n\n");
+
+  // Items
+  exported_text.push_str("Items\nIsaac, Garet, Ivan, Mia\nRange in spreadsheet -> G13:J27\n");
+  exported_text.push_str("----------------------------------------start----------------------------------------\n");
+  for i in 0..15 {
+    let isaac_item = save_data.items[0][i];
+    let isaac_item_id = (isaac_item & 0x1FF) as usize;
+    if isaac_item_id != 0 {
+      exported_text.push_str(ITEM_NAMES[isaac_item_id - 1]);
+      match isaac_item_id & 0x1FF {
+        0xB4 | 0xB5 | 0xB6 | 0xB7 | 0xBA | 0xBB | 0xBC | 0xBD | 0xBF | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xE2 | 0xE3 | 0xE4 | 0xE5 | 0xEC | 0xEE | 0xEF | 0xF0 | 0xF1 => {
+          exported_text.push_str(format!("*{}", (isaac_item >> 11) + 1).as_str());
+        }
+        _ => {}
+      }
+    }
+    exported_text.push('\t');
+
+    let garet_item = save_data.items[1][i];
+    let garet_item_id = (garet_item & 0x1FF) as usize;
+    if garet_item_id != 0 {
+      exported_text.push_str(ITEM_NAMES[garet_item_id - 1]);
+      match garet_item_id & 0x1FF {
+        0xB4 | 0xB5 | 0xB6 | 0xB7 | 0xBA | 0xBB | 0xBC | 0xBD | 0xBF | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xE2 | 0xE3 | 0xE4 | 0xE5 | 0xEC | 0xEE | 0xEF | 0xF0 | 0xF1 => {
+          exported_text.push_str(format!("*{}", (garet_item >> 11) + 1).as_str());
+        }
+        _ => {}
+      }
+    }
+    exported_text.push('\t');
+
+    let ivan_item = save_data.items[2][i];
+    let ivan_item_id = (ivan_item & 0x1FF) as usize;
+    if ivan_item_id != 0 {
+      exported_text.push_str(ITEM_NAMES[ivan_item_id - 1]);
+      match ivan_item_id & 0x1FF {
+        0xB4 | 0xB5 | 0xB6 | 0xB7 | 0xBA | 0xBB | 0xBC | 0xBD | 0xBF | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xE2 | 0xE3 | 0xE4 | 0xE5 | 0xEC | 0xEE | 0xEF | 0xF0 | 0xF1 => {
+          exported_text.push_str(format!("*{}", (ivan_item >> 11) + 1).as_str());
+        }
+        _ => {}
+      }
+    }
+    exported_text.push('\t');
+
+    let mia_item = save_data.items[3][i];
+    let mia_item_id = (mia_item & 0x1FF) as usize;
+    if mia_item_id != 0 {
+      exported_text.push_str(ITEM_NAMES[mia_item_id - 1]);
+      match mia_item_id & 0x1FF {
+        0xB4 | 0xB5 | 0xB6 | 0xB7 | 0xBA | 0xBB | 0xBC | 0xBD | 0xBF | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xE2 | 0xE3 | 0xE4 | 0xE5 | 0xEC | 0xEE | 0xEF | 0xF0 | 0xF1 => {
+          exported_text.push_str(format!("*{}", (mia_item >> 11) + 1).as_str());
+        }
+        _ => {}
+      }
+    }
+    exported_text.push('\n');
+  }
+  exported_text.push_str("-----------------------------------------end-----------------------------------------\n\n\n\n");
+  // Coins
+  exported_text.push_str("Coins\nRange in spreadsheet -> C27\n");
+  exported_text.push_str("---start---\n");
+  exported_text.push_str(format!("{}\n", save_data.coins).as_str());
+  exported_text.push_str("----end----\n");
+
+  exported_text
+}
+
+pub fn get_exported_data_for_dyrati_sheet_by_raw_save(raw_save: &[u8]) -> String {
+  let save_data = gen_save_data_by_raw_save(raw_save);
+  gen_exported_data_for_dyrati_sheet(&save_data)
+}
+
+pub fn get_exported_data_for_dyrati_sheet_by_bytes(password_bytes: &[u8]) -> String {
+  let save_data = gen_save_data_by_password_bytes(password_bytes);
+  gen_exported_data_for_dyrati_sheet(&save_data)
 }
