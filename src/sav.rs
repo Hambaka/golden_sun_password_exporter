@@ -636,23 +636,23 @@ fn gen_password_bytes(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
   }
 
   // Encrypt with key 0x1021.
-  let mut x_sum = 0xFFFF_u64;
+  let mut x_sum = 0xFFFF;
 
   for i in 0..size {
-    let byte = u64::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
+    let byte = u32::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
     x_sum ^= byte << 8;
     for _j in 0..8 {
       if (x_sum & 0x8000) == 0 {
         x_sum <<= 1;
       } else {
-        x_sum = (x_sum << 1) + 0xFFFF_EFDF;
+        x_sum = (x_sum << 1) + 0xEFDF;
       }
     }
   }
 
   x_sum = (!x_sum) & 0xFFFF;
-  let xor_value = (x_sum & 0xFF) as u32;
-  bits.push_bits((x_sum >> 8) as u32, 8);
+  let xor_value = x_sum & 0xFF;
+  bits.push_bits(x_sum >> 8, 8);
   bits.push_bits(xor_value, 8);
 
   for i in 0..=size {
