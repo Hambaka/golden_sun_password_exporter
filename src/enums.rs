@@ -71,9 +71,13 @@ pub fn get_cheat_version(cheat_version: &str) -> CheatVersion {
 // For Golden Sun: Lost Age
 pub fn get_cheat_address(cheat_version: CheatVersion) -> i32 {
   match cheat_version {
+    // 0x0200A78A
     CheatVersion::Japanese => 0x0200_A78A,
+    // 0x0200A74A
     CheatVersion::English => 0x0200_A74A,
+    // 0x0200A742
     CheatVersion::German | CheatVersion::French | CheatVersion::Italian => 0x0200_A742,
+    // 0x0200A73E
     CheatVersion::Spanish => 0x0200_A73E,
   }
 }

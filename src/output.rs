@@ -27,7 +27,7 @@ pub fn create_output_dir(output_path: &Path, has_output_arg: bool) -> String {
   output_dir_str
 }
 
-pub fn write_password_text_file(password_bytes: &[u8], password_version: enums::PasswordVersion, output_dir_str: &str) {
+pub fn write_password_text_file_by_bytes(password_bytes: &[u8], password_version: enums::PasswordVersion, output_dir_str: &str) {
   let mut password_text = String::new();
 
   match password_version {
@@ -63,17 +63,25 @@ pub fn write_password_text_file(password_bytes: &[u8], password_version: enums::
   output_file.write_all(password_text.as_bytes()).expect("Failed to write to password text file!");
 }
 
-/* Write password bytes to a binary file.
-   After you go to password input screen in GS2, you can import it via emulator's memory viewer.
-   Though you have to choose the correct address and import it, you can check the address in "get_cheat_address" function of "enums.rs". */
+pub fn write_converted_password_text_file(converted_password_text: &str, output_dir_str: &str){
+  let output_path = Path::new(output_dir_str).join("password.txt");
+  let mut output_file = File::create(output_path).expect("Failed to create password text file!");
+  output_file.write_all(converted_password_text.as_bytes()).expect("Failed to write to password text file!");
+}
+
+/// Write password bytes to a binary file.
+/// After you go to password input screen in GS2, you can import it via emulator's memory viewer, so that means you don't have to input password manually.
+/// Though you have to choose the correct address and import it, you can check the address in "get_cheat_address" function of "enums.rs".
 pub fn write_memory_dump_file(password_bytes: &[u8], sub_dir_str: &str) {
   let output_path = Path::new(sub_dir_str).join("memory.dmp");
   let mut output_file = File::create(output_path).expect("Failed to create memory dump file!");
   output_file.write_all(password_bytes).expect("Failed to write to memory dump file!");
 }
 
-/* I'm not sure, maybe you can use this kind of raw cheat code on your phone?
-   Then you don't have to input password manually. */
+/// Well, cheat file is much easier to use,
+/// After you go to password input screen in GS2, you can copy and paste cheat codes in emulators.
+/// But you have to remove the cheat codes you just entered immediately after applying it, otherwise it may cause problems.
+/// Though I'm not sure, maybe you can use this kind of raw cheat code on your phone as well?
 pub fn write_cheat_file(password_bytes: &[u8], cheat_version: enums::CheatVersion, sub_dir_str: &str) {
   // The address for password input screen in Golden Sun: The Lost Age
   let mut address = enums::get_cheat_address(cheat_version);

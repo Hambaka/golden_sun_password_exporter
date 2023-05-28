@@ -9,8 +9,7 @@ pub fn check_password_version(password: &str) -> PasswordVersion {
   }
 }
 
-/*
-// (Unused) Convert English version password (letters, numbers, symbols) to Japanese version password (hiragana).
+/// Convert English version password (letters, numbers, symbols) to Japanese version password (hiragana).
 fn convert_en_to_jp(input: char) -> char {
   match input {
     'A' => 'あ',
@@ -97,10 +96,8 @@ fn convert_en_to_jp(input: char) -> char {
     _ => input,
   }
 }
-*/
 
-/*
-// (Unused) Convert Japanese version password (hiragana) to English version password (letters, numbers, symbols).
+/// Convert Japanese version password (hiragana) to English version password (letters, numbers, symbols).
 fn convert_jp_to_en(input: char) -> char {
   match input {
     'あ' => 'A',
@@ -185,19 +182,18 @@ fn convert_jp_to_en(input: char) -> char {
     _ => input,
   }
 }
-*/
 
-/*
-// (Unused) Source: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
+// Source: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
 fn remove_whitespace(s: &str) -> String {
   s.chars().filter(|c| !c.is_whitespace()).collect()
 }
-*/
 
-// Source: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
+/*
+// (Unused) Source: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
 fn remove_whitespace_mut(s: &mut String) {
   s.retain(|c| !c.is_whitespace());
 }
+*/
 
 fn jp_to_byte(input: char) -> u8 {
   match input {
@@ -278,6 +274,7 @@ fn jp_to_byte(input: char) -> u8 {
     'ぶ' => 0x3D,
     'べ' => 0x3E,
     'ぼ' => 0x3F,
+    // For invalid value.
     _ => 0xFF,
   }
 }
@@ -363,6 +360,7 @@ fn en_to_byte(input: char) -> u8 {
     '+' => 0x3E,
 
     '=' => 0x3F,
+    // For invalid value.
     _ => 0xFF,
   }
 }
@@ -446,6 +444,7 @@ pub fn byte_to_jp(input: u8) -> char {
     0x3D => 'ぶ',
     0x3E => 'べ',
     0x3F => 'ぼ',
+    // For invalid value.
     _ => '？',
   }
 }
@@ -531,15 +530,24 @@ pub fn byte_to_en(input: u8) -> char {
     0x3E => '+',
 
     0x3F => '=',
-    _ => '∞',
+    // For invalid value.
+    _ => '※',
   }
 }
 
-pub fn txt_to_dmp(mut input: String, password_version: PasswordVersion) -> Vec<u8> {
-  remove_whitespace_mut(&mut input);
+pub fn txt_to_dmp(input: &str, password_version: PasswordVersion) -> Vec<u8> {
+  let string = remove_whitespace(input);
   let dmp_bytes = match password_version {
-    PasswordVersion::Japanese => input.chars().map(jp_to_byte).collect(),
-    PasswordVersion::English => input.chars().map(en_to_byte).collect(),
+    PasswordVersion::Japanese => string.chars().map(jp_to_byte).collect(),
+    PasswordVersion::English => string.chars().map(en_to_byte).collect(),
   };
   dmp_bytes
+}
+
+pub fn convert_txt(password: String, password_version: PasswordVersion) -> String{
+  let converted_password = match password_version {
+    PasswordVersion::English => password.chars().map(convert_en_to_jp).collect(),
+    PasswordVersion::Japanese => password.chars().map(convert_jp_to_en).collect(),
+  };
+  converted_password
 }

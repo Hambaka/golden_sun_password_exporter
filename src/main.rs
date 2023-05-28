@@ -11,7 +11,7 @@ use clap::{arg, ArgAction, ArgGroup, Command, value_parser};
 
 fn main() {
   let matches = Command::new("Golden Sun Password Exporter")
-    .version("v0.4.0")
+    .version("v0.4.1")
     .author("Hambaka")
     .about("A simple tool for a GBA game called Golden Sun\nYou can use this tool to export Golden Sun password to a text file/memory dump binary file/cheat file")
     .allow_negative_numbers(true)
@@ -276,7 +276,7 @@ fn main() {
         let sub_dir_str = output::create_sav_sub_dir(*key + 1, val.get_is_clear(), output_dir_str.as_str());
 
         if let Some(password_version) = password_version_option {
-          output::write_password_text_file(&password_bytes, password_version, sub_dir_str.as_str());
+          output::write_password_text_file_by_bytes(&password_bytes, password_version, sub_dir_str.as_str());
         }
         if to_export_memory_dump {
           output::write_memory_dump_file(&password_bytes, sub_dir_str.as_str());
@@ -299,15 +299,15 @@ fn main() {
 
       // If the text file is empty, exit.
       if password.is_empty() {
-        println!("The text file is empty!");
+        eprintln!("The text file is empty!");
         return;
       }
 
       // Check its password version and file size.
       let password_version = text::check_password_version(password.as_ref());
-      let password_bytes = text::txt_to_dmp(password, password_version);
+      let password_bytes = text::txt_to_dmp(password.as_str(), password_version);
       if password_bytes.len() != 16 && password_bytes.len() != 61 && password_bytes.len() != 260 {
-        println!("Password's length is not valid!");
+        eprintln!("Password's length is not valid!");
         return;
       }
 
@@ -322,7 +322,7 @@ fn main() {
         if sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
           is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
         } else {
-          println!("It is not possible to downgrade your password to target password grade!");
+          eprintln!("It is not possible to downgrade your password to target password grade!");
           return;
         }
       }
@@ -363,12 +363,15 @@ fn main() {
 
       // Write files.
       if to_convert_password {
-        output::write_password_text_file(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
-      } else if let Some(..) = target_password_grade_option {
-        if !is_no_need_to_downgrade {
-          output::write_password_text_file(&target_password_bytes, password_version, output_dir_str.as_str());
+        if target_password_grade_option.is_none() {
+          output::write_converted_password_text_file(text::convert_txt(password, password_version).as_str(), output_dir_str.as_str());
+        } else {
+          output::write_password_text_file_by_bytes(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
         }
+      } else if target_password_grade_option.is_some() && !is_no_need_to_downgrade {
+        output::write_password_text_file_by_bytes(&target_password_bytes, password_version, output_dir_str.as_str());
       }
+
       if to_export_memory_dump {
         output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
       }
@@ -401,11 +404,10 @@ fn main() {
         let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
         target_password_grade_option = Some(target_password_grade);
         let source_password_grade = enums::get_password_grade_by_len(password_bytes.len());
-
         if sav::get_is_able_to_downgrade(source_password_grade, target_password_grade) {
           is_no_need_to_downgrade = sav::get_is_no_need_to_downgrade(source_password_grade, target_password_grade);
         } else {
-          println!("It is not possible to downgrade your password to target password grade!");
+          eprintln!("It is not possible to downgrade your password to target password grade!");
           return;
         }
       }
@@ -445,13 +447,11 @@ fn main() {
       }
 
       // Write files.
-      if let Some(..) = target_password_grade_option {
-        if !is_no_need_to_downgrade {
+      if target_password_grade_option.is_some() && !is_no_need_to_downgrade {
           output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
-        }
       }
       if let Some(password_version) = password_version_option {
-        output::write_password_text_file(&target_password_bytes, password_version, output_dir_str.as_str());
+        output::write_password_text_file_by_bytes(&target_password_bytes, password_version, output_dir_str.as_str());
       }
       if let Some(cheat_version) = cheat_version_option {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
