@@ -1,6 +1,6 @@
 mod enums;
 mod sav;
-mod text;
+mod convert;
 mod output;
 
 use std::fs::File;
@@ -307,9 +307,9 @@ fn main() {
       }
 
       // Check its password version and its character count.
-      let password_version = text::get_password_version(password.as_ref());
+      let password_version = convert::get_password_version(password.as_ref());
       // Remove all line break and whitespace.
-      let password_without_whitespace = text::remove_whitespace(password.as_ref());
+      let password_without_whitespace = convert::remove_whitespace(password.as_ref());
       // Check password's length.
       if password_without_whitespace.chars().count() != 16 && password_without_whitespace.chars().count() != 61 && password_without_whitespace.chars().count() != 260 {
         eprintln!("Password's length is not valid!");
@@ -317,8 +317,8 @@ fn main() {
       }
       // Check if it contains invalid char
       let has_invalid_char = match password_version {
-        enums::PasswordVersion::Japanese => text::contains_invalid_char_jp(password_without_whitespace.as_str()),
-        enums::PasswordVersion::English => text::contains_invalid_char_en(password_without_whitespace.as_str()),
+        enums::PasswordVersion::Japanese => convert::contains_invalid_char_jp(password_without_whitespace.as_str()),
+        enums::PasswordVersion::English => convert::contains_invalid_char_en(password_without_whitespace.as_str()),
       };
       if has_invalid_char {
         eprintln!("Password contains invalid character!");
@@ -326,7 +326,7 @@ fn main() {
       }
 
       // Check if the password is valid;
-      let password_bytes = text::convert_txt_to_dmp(password_without_whitespace.as_str(), password_version);
+      let password_bytes = convert::convert_txt_to_dmp(password_without_whitespace.as_str(), password_version);
       let mut password_bits;
       if let Some(bits) = sav::get_valid_password_bits_option(password_bytes.as_slice(), true) {
         password_bits = bits;
@@ -388,7 +388,7 @@ fn main() {
       // Write files.
       if to_convert_password {
         if target_password_grade_option.is_none() {
-          output::write_converted_password_text_file(text::convert_txt(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
+          output::write_converted_password_text_file(convert::convert_txt(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
         } else {
           output::write_password_text_file_with_bytes(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
         }
@@ -430,7 +430,7 @@ fn main() {
       input_file.read_to_end(&mut password_bytes).unwrap();
 
       // Check if it has contains invalid byte
-      let has_invalid_byte = text::contains_invalid_byte(password_bytes.as_slice());
+      let has_invalid_byte = convert::contains_invalid_byte(password_bytes.as_slice());
       if has_invalid_byte {
         eprintln!("Password contains invalid byte!");
         return;
