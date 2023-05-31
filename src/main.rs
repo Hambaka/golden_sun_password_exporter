@@ -287,7 +287,7 @@ fn main() {
           if matches!(target_password_grade, enums::PasswordGrade::Gold) {
             output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()).as_str(), sub_dir_str.as_str());
           } else {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(password_bytes.as_slice(), target_password_grade).as_str(), output_dir_str.as_str());
+            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(password_bytes.as_slice(), target_password_grade).as_str(), sub_dir_str.as_str());
           }
         }
       }

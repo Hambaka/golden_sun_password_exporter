@@ -726,26 +726,22 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
   let password_grade = get_password_grade_by_bytes_len(password_bytes.len());
   let mut bytes_data = vec![0; password_bytes.len()];
   /* Remove each byte's position data by minus its index.
-     I'm not sure if it's the correct way to do that, but it works.
-     Maybe better way for this should be like this:
-
-     if i < 0x40 {
-       bytes_data[i] = ((u16::from(*data) + 0x40 - (i as u16)) & 0x3F) as u8;
-     } else if i < 0x80 {
-       bytes_data[i] = ((u16::from(*data) + 0x80 - (i as u16)) & 0x3F) as u8;
-     } else {
-       bytes_data[i] = ((u16::from(*data) + 0x100 - (i as u16)) & 0x3F) as u8;
-     }
-
-     But "+ 0x100" works for all elements, so...
+     I'm not sure if it's the correct way to do that, but "+ 0x200" works.
+     Maybe there is a better way for this...
 
      Notes about Hex to Bin:
-     0x40  ->    100 0000
-     0x80  ->   1000 0000
-     0x100 -> 1 0000 0000
-     0x3F  ->     11 1111 */
+     63  -> 0x3F  ->     11 1111
+
+     64  -> 0x40  ->    100 0000
+     128 -> 0x80  ->   1000 0000
+     256 -> 0x100 -> 1 0000 0000
+
+     Max len
+     16  -> 0x10
+     61  -> 0x3D
+     260 -> 0x104 -> 1 0000 0100 */
   for (i, data) in password_bytes.iter().enumerate() {
-    bytes_data[i] = ((u16::from(*data) + 0x100 - (i as u16)) & 0x3F) as u8;
+    bytes_data[i] = ((u16::from(*data) + 0x200 - (i as u16)) & 0x3F) as u8;
   }
 
   /* Remove all checksum bytes.
