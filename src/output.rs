@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use crate::{enums, text};
+use crate::enums::PasswordVersion;
 
 pub fn create_sav_sub_dir(slot_num: u8, is_clear_data: bool, output_dir_str: &str) -> String {
   let output_path = if is_clear_data {
@@ -27,16 +28,15 @@ pub fn create_output_dir(output_path: &Path, has_output_arg: bool) -> String {
   output_dir_str
 }
 
-pub fn write_password_text_file_by_bytes(password_bytes: &[u8], password_version: enums::PasswordVersion, output_dir_str: &str) {
+pub fn write_password_text_file_with_bytes(password_bytes: &[u8], password_version: PasswordVersion, output_dir_str: &str) {
   let mut password_text = String::new();
 
   match password_version {
-    enums::PasswordVersion::Japanese => {
+    PasswordVersion::Japanese => {
       for (i, password_byte) in password_bytes.iter().enumerate() {
-        password_text.push(text::byte_to_jp(*password_byte));
+        password_text.push(text::convert_byte_to_jp(*password_byte));
         if (i + 1) % 50 == 0 {
-          password_text.push('\n');
-          password_text.push('\n');
+          password_text.push_str("\n\n");
         } else if (i + 1) % 10 == 0 {
           password_text.push('\n');
         } else if (i + 1) % 5 == 0 {
@@ -44,12 +44,11 @@ pub fn write_password_text_file_by_bytes(password_bytes: &[u8], password_version
         }
       }
     }
-    enums::PasswordVersion::English => {
+    PasswordVersion::English => {
       for (i, password_byte) in password_bytes.iter().enumerate() {
-        password_text.push(text::byte_to_en(*password_byte));
+        password_text.push(text::convert_byte_to_en(*password_byte));
         if (i + 1) % 50 == 0 {
-          password_text.push('\n');
-          password_text.push('\n');
+          password_text.push_str("\n\n");
         } else if (i + 1) % 10 == 0 {
           password_text.push('\n');
         } else if (i + 1) % 5 == 0 {
@@ -63,15 +62,32 @@ pub fn write_password_text_file_by_bytes(password_bytes: &[u8], password_version
   output_file.write_all(password_text.as_bytes()).expect("Failed to write to password text file!");
 }
 
-pub fn write_converted_password_text_file(converted_password_text: &str, output_dir_str: &str){
+pub fn write_converted_password_text_file(converted_password_text: &str, output_dir_str: &str) {
+  let mut password_text = String::new();
+  let whitespace = match text::get_password_version(converted_password_text) {
+    PasswordVersion::Japanese => '　',
+    PasswordVersion::English => ' ',
+  };
+
+  for (i, char) in converted_password_text.chars().enumerate() {
+    password_text.push(char);
+    if (i + 1) % 50 == 0 {
+      password_text.push_str("\n\n");
+    } else if (i + 1) % 10 == 0 {
+      password_text.push('\n');
+    } else if (i + 1) % 5 == 0 {
+      password_text.push(whitespace);
+    }
+  }
+
   let output_path = Path::new(output_dir_str).join("password.txt");
   let mut output_file = File::create(output_path).expect("Failed to create password text file!");
-  output_file.write_all(converted_password_text.as_bytes()).expect("Failed to write to password text file!");
+  output_file.write_all(password_text.as_bytes()).expect("Failed to write to password text file!");
 }
 
 /// Write password bytes to a binary file.
 /// After you go to password input screen in GS2, you can import it via emulator's memory viewer, so that means you don't have to input password manually.
-/// Though you have to choose the correct address and import it, you can check the address in "get_cheat_address" function of "enums.rs".
+/// Though you have to choose the correct address and import it, you can check the address in `get_cheat_address` function of "enums.rs".
 pub fn write_memory_dump_file(password_bytes: &[u8], sub_dir_str: &str) {
   let output_path = Path::new(sub_dir_str).join("memory.dmp");
   let mut output_file = File::create(output_path).expect("Failed to create memory dump file!");
@@ -110,7 +126,7 @@ pub fn write_cheat_file(password_bytes: &[u8], cheat_version: enums::CheatVersio
   output_file.write_all(text.as_bytes()).expect("Failed to write to cheat file!");
 }
 
-pub fn write_text_data_file(text_data: &str, output_dir_str: &str){
+pub fn write_text_data_file(text_data: &str, output_dir_str: &str) {
   let output_path = Path::new(output_dir_str).join("exported_text_data.txt");
   let mut output_file = File::create(output_path).expect("Failed to create exported text data file!");
   output_file.write_all(text_data.as_bytes()).expect("Failed to write to exported text data file!");
