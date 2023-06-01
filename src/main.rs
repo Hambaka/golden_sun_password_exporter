@@ -220,11 +220,13 @@ fn main() {
       input_file.read_to_end(&mut raw_save_file).unwrap();
 
       // Check if it is GS1(TBS) save file, also get loop start index.
-      let (is_tbs_save, loop_start_index) = sav::check_is_tbs_sav_and_get_loop_start_index(&raw_save_file);
-      if !is_tbs_save {
+      let loop_start_index;
+      if let Some(index) = sav::get_loop_start_index_option(&raw_save_file) {
+        loop_start_index = index;
+      } else {
         eprintln!("It's not a valid Golden Sun 1 save file! Or there is no save data in save file!");
         return;
-      }
+      };
 
       /* Get save data from save file with slot number.
          Also check if the save data is clear data. */
@@ -240,12 +242,23 @@ fn main() {
 
       // "grade" argument.
       let grade = sub_matches.get_one::<String>("grade").unwrap();
-      let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
+      let target_password_grade;
+      if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()){
+        target_password_grade = password_grade;
+      }else {
+        print_grade_arg_message();
+        return;
+      };
 
       // "text" argument.
       let mut password_version_option: Option<enums::PasswordVersion> = None;
       if let Some(text) = sub_matches.get_one::<String>("text") {
-        password_version_option = Some(enums::get_password_version(text.as_str()));
+        if let Some(password_version) = enums::get_password_version(text.as_str()){
+          password_version_option = Some(password_version);
+        }else {
+          print_text_arg_message();
+          return;
+        };
       }
 
       // "memory" flag.
@@ -254,7 +267,12 @@ fn main() {
       // "cheat" argument.
       let mut cheat_version_option: Option<enums::CheatVersion> = None;
       if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
-        cheat_version_option = Some(enums::get_cheat_version(cheat.as_str()));
+        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()){
+          cheat_version_option = Some(cheat_version);
+        }else {
+          print_cheat_arg_message();
+          return;
+        };
       }
 
       // "export" flag.
@@ -285,9 +303,9 @@ fn main() {
         }
         if to_export_data_text {
           if matches!(target_password_grade, enums::PasswordGrade::Gold) {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()).as_str(), sub_dir_str.as_str());
+            output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()).as_str(), sub_dir_str.as_str());
           } else {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(password_bytes.as_slice(), target_password_grade).as_str(), sub_dir_str.as_str());
+            output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(password_bytes.as_slice(), target_password_grade).as_str(), sub_dir_str.as_str());
           }
         }
       }
@@ -326,7 +344,7 @@ fn main() {
       }
 
       // Check if the password is valid;
-      let password_bytes = convert::convert_txt_to_dmp(password_without_whitespace.as_str(), password_version);
+      let password_bytes = convert::txt_to_dmp(password_without_whitespace.as_str(), password_version);
       let mut password_bits;
       if let Some(bits) = sav::get_valid_password_bits_option(password_bytes.as_slice(), true) {
         password_bits = bits;
@@ -340,7 +358,13 @@ fn main() {
       let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
       let mut is_no_need_to_downgrade = false;
       if let Some(grade) = sub_matches.get_one::<String>("grade") {
-        let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
+        let target_password_grade;
+        if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()){
+          target_password_grade = password_grade;
+        }else {
+          print_grade_arg_message();
+          return;
+        };
         target_password_grade_option = Some(target_password_grade);
         if sav::can_downgrade(source_password_grade, target_password_grade) {
           is_no_need_to_downgrade = sav::no_need_to_downgrade(source_password_grade, target_password_grade);
@@ -359,7 +383,12 @@ fn main() {
       // "cheat" argument.
       let mut cheat_version_option: Option<enums::CheatVersion> = None;
       if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
-        cheat_version_option = Some(enums::get_cheat_version(cheat.as_str()));
+        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()){
+          cheat_version_option = Some(cheat_version);
+        }else {
+          print_cheat_arg_message();
+          return;
+        };
       }
 
       // "export" flag.
@@ -388,7 +417,7 @@ fn main() {
       // Write files.
       if to_convert_password {
         if target_password_grade_option.is_none() {
-          output::write_converted_password_text_file(convert::convert_txt(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
+          output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
         } else {
           output::write_password_text_file_with_bytes(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
         }
@@ -405,12 +434,12 @@ fn main() {
       if to_export_data_text {
         if let Some(target_password_grade) = target_password_grade_option {
           if is_no_need_to_downgrade {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
+            output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
           } else {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(target_password_bytes.as_slice(), target_password_grade).as_str(), output_dir_str.as_str());
+            output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(target_password_bytes.as_slice(), target_password_grade).as_str(), output_dir_str.as_str());
           }
         } else {
-          output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
+          output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
         }
       }
     }
@@ -450,7 +479,13 @@ fn main() {
       let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
       let mut is_no_need_to_downgrade = false;
       if let Some(grade) = sub_matches.get_one::<String>("grade") {
-        let target_password_grade = enums::get_password_grade_by_arg(grade.as_str());
+        let target_password_grade;
+        if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()){
+          target_password_grade = password_grade;
+        }else {
+          print_grade_arg_message();
+          return;
+        };
         target_password_grade_option = Some(target_password_grade);
         if sav::can_downgrade(source_password_grade, target_password_grade) {
           is_no_need_to_downgrade = sav::no_need_to_downgrade(source_password_grade, target_password_grade);
@@ -463,13 +498,23 @@ fn main() {
       // "text" argument.
       let mut password_version_option: Option<enums::PasswordVersion> = None;
       if let Some(text) = sub_matches.get_one::<String>("text") {
-        password_version_option = Some(enums::get_password_version(text.as_str()));
+        if let Some(password_version) = enums::get_password_version(text.as_str()){
+          password_version_option = Some(password_version);
+        }else {
+          print_text_arg_message();
+          return;
+        };
       }
 
       // "cheat" argument.
       let mut cheat_version_option: Option<enums::CheatVersion> = None;
       if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
-        cheat_version_option = Some(enums::get_cheat_version(cheat.as_str()));
+        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()){
+          cheat_version_option = Some(cheat_version);
+        }else {
+          print_cheat_arg_message();
+          return;
+        };
       }
 
       // "export" flag.
@@ -508,15 +553,37 @@ fn main() {
       if to_export_data_text {
         if let Some(target_password_grade) = target_password_grade_option {
           if is_no_need_to_downgrade {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
+            output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
           } else {
-            output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(target_password_bytes.as_slice(), target_password_grade).as_str(), output_dir_str.as_str());
+            output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_bytes(target_password_bytes.as_slice(), target_password_grade).as_str(), output_dir_str.as_str());
           }
         } else {
-          output::write_text_data_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
+          output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
         }
       }
     }
     _ => unreachable!(),
   }
+}
+
+fn print_grade_arg_message(){
+  eprintln!("Please input a valid password grade!");
+  eprintln!("Available values: g, s, b");
+  eprintln!("g: Gold, s: Silver, b: Bronze");
+  eprintln!("Example: -g g");
+}
+
+fn print_text_arg_message(){
+  eprintln!("Please input a valid password version!");
+  eprintln!("Available values: j, e");
+  eprintln!("j: Japanese, e: English");
+  eprintln!("Example: -t e");
+}
+
+fn print_cheat_arg_message(){
+  eprintln!("Please input a valid cheat version!");
+  eprintln!("Available values: j, u, e, g, s, f, i");
+  eprintln!("j: Japan,   u: USA/Europe, e: USA/Europe");
+  eprintln!("g: Germany, s: Spanish,    f: France,    i: Italy");
+  eprintln!("Example: -c u");
 }

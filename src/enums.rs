@@ -23,12 +23,12 @@ pub enum CheatVersion {
   Italian,
 }
 
-pub fn get_password_grade_by_arg(grade_arg_str: &str) -> PasswordGrade {
+pub fn get_password_grade_by_arg(grade_arg_str: &str) -> Option<PasswordGrade> {
   match grade_arg_str {
-    "s" => PasswordGrade::Silver,
-    "b" => PasswordGrade::Bronze,
-    // Include "g"
-    _ => PasswordGrade::Gold,
+    "s" => Some(PasswordGrade::Silver),
+    "b" => Some(PasswordGrade::Bronze),
+    "g" => Some(PasswordGrade::Gold),
+    _ => None,
   }
 }
 
@@ -41,11 +41,11 @@ pub fn get_password_grade_by_bytes_len(password_bytes_len: usize) -> PasswordGra
   }
 }
 
-pub fn get_password_version(text_arg_str: &str) -> PasswordVersion {
+pub fn get_password_version(text_arg_str: &str) -> Option<PasswordVersion> {
   match text_arg_str {
-    "j" => PasswordVersion::Japanese,
-    // Include "e"
-    _ => PasswordVersion::English,
+    "j" => Some(PasswordVersion::Japanese),
+    "e" => Some(PasswordVersion::English),
+    _ => None,
   }
 }
 
@@ -56,15 +56,15 @@ pub fn rev_password_version(password_version: PasswordVersion) -> PasswordVersio
   }
 }
 
-pub fn get_cheat_version(cheat_version: &str) -> CheatVersion {
+pub fn get_cheat_version(cheat_version: &str) -> Option<CheatVersion> {
   match cheat_version {
-    "j" => CheatVersion::Japanese,
-    "g" => CheatVersion::German,
-    "s" => CheatVersion::Spanish,
-    "f" => CheatVersion::French,
-    "i" => CheatVersion::Italian,
-    // Include "e"
-    _ => CheatVersion::English,
+    "j" => Some(CheatVersion::Japanese),
+    "u" | "e" => Some(CheatVersion::English),
+    "g" => Some(CheatVersion::German),
+    "s" => Some(CheatVersion::Spanish),
+    "f" => Some(CheatVersion::French),
+    "i" => Some(CheatVersion::Italian),
+    _ => None,
   }
 }
 

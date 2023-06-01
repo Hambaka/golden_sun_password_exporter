@@ -117,13 +117,17 @@ const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
 
 /// Golden Sun build date
 /// Source: Golden Sun Hacking Community Discord Server
-/// GS1 (J) = 0x159C
-/// GS1 (U) = 0x1652
-/// GS1 (G) = 0x1849
-/// GS1 (S) = 0x1885
-/// GS1 (F) = 0x1713
-/// GS1 (I) = 0x1886
-const GS_BUILD_DATE: [[u8; 2]; 6] = [[0x9C, 0x15], [0x52, 0x16], [0x49, 0x18], [0x85, 0x18], [0x13, 0x17], [0x86, 0x18]];
+///
+/// Value: 0x1000 | 1024 * year + 64 * month + day
+/// Note: Year is "1", "2", not "2001", "2002"
+///
+/// GS1 (J) = 0x159C -> 2001/06/28
+/// GS1 (U) = 0x1652 -> 2001/09/18
+/// GS1 (G) = 0x1849 -> 2002/01/09
+/// GS1 (S) = 0x1885 -> 2002/02/05
+/// GS1 (F) = 0x1713 -> 2001/12/19
+/// GS1 (I) = 0x1886 -> 2002/02/06
+const GS_BUILD_DATE: [u16; 6] = [0x159C, 0x1652, 0x1849, 0x1885, 0x1713, 0x1886];
 
 /// The size of each save slot is 4KB.
 const SAVE_SLOT_SIZE: usize = 0x1000;
@@ -167,6 +171,7 @@ const MAX_VALID_SLOT_NUMBER: u8 = 0x02;
 const HEADER_PRIORITY_LOCATION_INDEX: [usize; 2] = [0x0A, 0x0B];
 
 /// Valid psynergy items in TBS
+///
 /// C8: Orb of Force
 /// C9: Douse Drop
 /// CA: Frost Jewel
@@ -178,6 +183,7 @@ const HEADER_PRIORITY_LOCATION_INDEX: [usize; 2] = [0x0A, 0x0B];
 const PSYNERGY_ITEMS: [u16; 8] = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF];
 
 /// Valid stackable items in TBS
+///
 /// B4: Herb
 /// B5: Nut
 /// B6: Vial
@@ -294,7 +300,7 @@ struct HeaderInfo {
   priority: u16,
   // Start from 0
   slot_number: u8,
-  // Please note, the value for this is not in save header, this is only for checking valid header/save
+  // Please note, the value of this is not in save header, this is only for checking valid header/save
   is_clear_data: bool,
 }
 
@@ -410,29 +416,19 @@ impl BitArray {
   }
 }
 
-pub fn check_is_tbs_sav_and_get_loop_start_index(raw_save_file: &[u8]) -> (bool, usize) {
-  let mut is_tbs_save = false;
-  let mut loop_start_index = MAX_LOOP_COUNT;
+pub fn get_loop_start_index_option(raw_save_file: &[u8]) -> Option<usize> {
   for i in 0..MAX_LOOP_COUNT {
     let Ok(header_string) = std::str::from_utf8(&raw_save_file[(i * SAVE_SLOT_SIZE)..(i * SAVE_SLOT_SIZE + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX)]) else { continue; };
     if !header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
       continue;
     }
 
-    for gs_build_date in GS_BUILD_DATE {
-      if u16::from_le_bytes(gs_build_date) == u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_BUILD_DATE_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_BUILD_DATE_LOCATION_INDEX[1]]]) {
-        is_tbs_save = true;
-        loop_start_index = i;
-        break;
-      }
-    }
-
-    if is_tbs_save {
-      break;
+    let build_date_from_raw_save = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE + FIRST_BUILD_DATE_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE + FIRST_BUILD_DATE_LOCATION_INDEX[1]]]);
+    if GS_BUILD_DATE.contains(&build_date_from_raw_save) {
+      return Some(i);
     }
   }
-
-  (is_tbs_save, loop_start_index)
+  None
 }
 
 pub fn get_raw_save_data_map(to_export_all_data: bool, raw_save_file: &[u8], loop_start_index: usize) -> HashMap<u8, RawSaveData> {
@@ -1028,6 +1024,7 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   SaveData { levels, djinn, events, stats, items, coins }
 }
 
+/// Returns `true` if `source_grade` >= `target_grade`.
 pub fn can_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {
   match source_grade {
     PasswordGrade::Gold => {
@@ -1050,6 +1047,7 @@ pub fn can_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -
   }
 }
 
+/// Returns `true` if `source_grade` <= `target_grade`.
 pub fn no_need_to_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {
   match source_grade {
     PasswordGrade::Gold => {

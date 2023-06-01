@@ -1,6 +1,7 @@
 use crate::enums::PasswordVersion;
 
 /// Japanese Hiragana characters in Japanese version password.
+///
 /// Please note that 'を' and 'ん' are arranged in reverse order, because 'を' is 0x2D and 'ん' is 0x2C.
 const VALID_PASSWORD_CHARS_JP: [char; 64] = [
   'あ', 'い', 'う', 'え', 'お',
@@ -48,19 +49,30 @@ const VALID_PASSWORD_BYTES: [u8; 64] = [
 ];
 
 /*
-// (Unused) Source: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
+/// Remove all white spaces and line breaks (Mutable)
+///
+/// [Source]
+///
+/// [Source]: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
 fn remove_whitespace_mut(s: &mut String) {
   s.retain(|c| !c.is_whitespace());
 }
 */
 
-// Source: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
+/// Remove all white spaces and line breaks
+///
+/// [Source]
+///
+/// [Source]: https://stackoverflow.com/questions/57063777/remove-all-whitespace-from-a-string
 pub fn remove_whitespace(s: &str) -> String {
   s.chars().filter(|c| !c.is_whitespace()).collect()
 }
 
-pub fn get_password_version(password: &str) -> PasswordVersion {
-  let first_char = password.chars().next().unwrap();
+/// A very stupid and lazy way to detect password version by comparing the first char in `password_str` to 'z' in ASCII.
+///
+/// 'z' is the "largest" char in English version password. If the first char is larger than 'z', then it is Japanese version password, since Japanese version password characters are all Hiragana.
+pub fn get_password_version(password_str: &str) -> PasswordVersion {
+  let first_char = password_str.chars().next().unwrap();
   if first_char <= 'z' {
     PasswordVersion::English
   } else {
@@ -68,9 +80,10 @@ pub fn get_password_version(password: &str) -> PasswordVersion {
   }
 }
 
-pub fn contains_invalid_char_en(password: &str) -> bool {
+/// Returns `true` if this `password_str` contains char that does not exist in `VALID_PASSWORD_CHARS_EN`.
+pub fn contains_invalid_char_en(password_str: &str) -> bool {
   let mut result = false;
-  for char in password.chars() {
+  for char in password_str.chars() {
     if !VALID_PASSWORD_CHARS_EN.contains(&char) {
       result = true;
       break;
@@ -79,9 +92,10 @@ pub fn contains_invalid_char_en(password: &str) -> bool {
   result
 }
 
-pub fn contains_invalid_char_jp(password: &str) -> bool {
+/// Returns `true` if this `password_str` contains char that does not exist in `VALID_PASSWORD_CHARS_JP`.
+pub fn contains_invalid_char_jp(password_str: &str) -> bool {
   let mut result = false;
-  for char in password.chars() {
+  for char in password_str.chars() {
     if !VALID_PASSWORD_CHARS_JP.contains(&char) {
       result = true;
       break;
@@ -90,6 +104,7 @@ pub fn contains_invalid_char_jp(password: &str) -> bool {
   result
 }
 
+/// Returns `true` if this `password_bytes` contains value that does not exist in `VALID_PASSWORD_BYTES`.
 pub fn contains_invalid_byte(password_bytes: &[u8]) -> bool {
   let mut result = false;
   for byte in password_bytes {
@@ -101,51 +116,56 @@ pub fn contains_invalid_byte(password_bytes: &[u8]) -> bool {
   result
 }
 
-/// Convert English version password (letters, numbers, signs) to Japanese version password (hiragana).
-fn convert_en_to_jp(input: char) -> char {
+/// Convert English version password char (letters, numbers, signs) to Japanese version password char (Hiragana).
+fn en_to_jp(input: char) -> char {
   let index = VALID_PASSWORD_CHARS_EN.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_CHARS_JP[index]
 }
 
-/// Convert Japanese version password (hiragana) to English version password (letters, numbers, signs).
-fn convert_jp_to_en(input: char) -> char {
+/// Convert Japanese version password char (Hiragana) to English version password char (letters, numbers, signs).
+fn jp_to_en(input: char) -> char {
   let index = VALID_PASSWORD_CHARS_JP.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_CHARS_EN[index]
 }
 
-fn convert_jp_to_byte(input: char) -> u8 {
+/// Convert Japanese version password char (Hiragana) to in-game real byte value.
+fn jp_to_byte(input: char) -> u8 {
   let index = VALID_PASSWORD_CHARS_JP.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_BYTES[index]
 }
 
-fn convert_en_to_byte(input: char) -> u8 {
+/// Convert English version password char (letters, numbers, signs) to in-game real byte value.
+fn en_to_byte(input: char) -> u8 {
   let index = VALID_PASSWORD_CHARS_EN.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_BYTES[index]
 }
 
-pub fn convert_byte_to_jp(input: u8) -> char {
+/// Convert password byte value to Japanese version password char (Hiragana).
+pub fn byte_to_jp(input: u8) -> char {
   let index = VALID_PASSWORD_BYTES.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_CHARS_JP[index]
 }
 
-pub fn convert_byte_to_en(input: u8) -> char {
+/// Convert password byte value to English version password char (letters, numbers, signs).
+pub fn byte_to_en(input: u8) -> char {
   let index = VALID_PASSWORD_BYTES.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_CHARS_EN[index]
 }
 
-pub fn convert_txt_to_dmp(password: &str, password_version: PasswordVersion) -> Vec<u8> {
+/// Convert password text string to bytes (memory dump).
+pub fn txt_to_dmp(password: &str, password_version: PasswordVersion) -> Vec<u8> {
   let dmp_bytes = match password_version {
-    PasswordVersion::Japanese => password.chars().map(convert_jp_to_byte).collect(),
-    PasswordVersion::English => password.chars().map(convert_en_to_byte).collect(),
+    PasswordVersion::Japanese => password.chars().map(jp_to_byte).collect(),
+    PasswordVersion::English => password.chars().map(en_to_byte).collect(),
   };
   dmp_bytes
 }
 
-pub fn convert_txt(password: &str, password_version: PasswordVersion) -> String {
+/// Convert password text string to another version.
+pub fn txt_to_another_version(password: &str, password_version: PasswordVersion) -> String {
   let converted_password = match password_version {
-    PasswordVersion::English => password.chars().map(convert_en_to_jp).collect(),
-    PasswordVersion::Japanese => password.chars().map(convert_jp_to_en).collect(),
+    PasswordVersion::English => password.chars().map(en_to_jp).collect(),
+    PasswordVersion::Japanese => password.chars().map(jp_to_en).collect(),
   };
-
   converted_password
 }

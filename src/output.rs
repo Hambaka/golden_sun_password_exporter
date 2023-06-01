@@ -34,7 +34,7 @@ pub fn write_password_text_file_with_bytes(password_bytes: &[u8], password_versi
   match password_version {
     PasswordVersion::Japanese => {
       for (i, password_byte) in password_bytes.iter().enumerate() {
-        password_text.push(convert::convert_byte_to_jp(*password_byte));
+        password_text.push(convert::byte_to_jp(*password_byte));
         if (i + 1) % 50 == 0 {
           password_text.push_str("\n\n");
         } else if (i + 1) % 10 == 0 {
@@ -46,7 +46,7 @@ pub fn write_password_text_file_with_bytes(password_bytes: &[u8], password_versi
     }
     PasswordVersion::English => {
       for (i, password_byte) in password_bytes.iter().enumerate() {
-        password_text.push(convert::convert_byte_to_en(*password_byte));
+        password_text.push(convert::byte_to_en(*password_byte));
         if (i + 1) % 50 == 0 {
           password_text.push_str("\n\n");
         } else if (i + 1) % 10 == 0 {
@@ -126,8 +126,8 @@ pub fn write_cheat_file(password_bytes: &[u8], cheat_version: enums::CheatVersio
   output_file.write_all(text.as_bytes()).expect("Failed to write to cheat file!");
 }
 
-pub fn write_text_data_file(text_data: &str, output_dir_str: &str) {
-  let output_path = Path::new(output_dir_str).join("exported_text_data.txt");
-  let mut output_file = File::create(output_path).expect("Failed to create exported text data file!");
-  output_file.write_all(text_data.as_bytes()).expect("Failed to write to exported text data file!");
+pub fn write_game_data_text_file(text_data: &str, output_dir_str: &str) {
+  let output_path = Path::new(output_dir_str).join("exported_game_data.txt");
+  let mut output_file = File::create(output_path).expect("Failed to create exported game data text file!");
+  output_file.write_all(text_data.as_bytes()).expect("Failed to write to exported game data text file!");
 }
