@@ -196,6 +196,39 @@ fn main() {
   match matches.subcommand() {
     // "sav" subcommand.
     Some(("sav", sub_matches)) => {
+      // We should check the validity of the values of "grade", "text" and "cheat" arguments first.
+      // "grade" argument.
+      let grade = sub_matches.get_one::<String>("grade").unwrap();
+      let target_password_grade;
+      if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()) {
+        target_password_grade = password_grade;
+      } else {
+        print_grade_arg_message();
+        return;
+      };
+
+      // "text" argument.
+      let mut password_version_option: Option<enums::PasswordVersion> = None;
+      if let Some(text) = sub_matches.get_one::<String>("text") {
+        if let Some(password_version) = enums::get_password_version(text.as_str()) {
+          password_version_option = Some(password_version);
+        } else {
+          print_text_arg_message();
+          return;
+        };
+      }
+
+      // "cheat" argument.
+      let mut cheat_version_option: Option<enums::CheatVersion> = None;
+      if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
+        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()) {
+          cheat_version_option = Some(cheat_version);
+        } else {
+          print_cheat_arg_message();
+          return;
+        };
+      }
+
       // Read save file.
       let sav_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
       let mut input_file = File::open(sav_input_path).expect("An error occurred while opening save file!");
@@ -240,41 +273,8 @@ fn main() {
         return;
       }
 
-      // "grade" argument.
-      let grade = sub_matches.get_one::<String>("grade").unwrap();
-      let target_password_grade;
-      if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()){
-        target_password_grade = password_grade;
-      }else {
-        print_grade_arg_message();
-        return;
-      };
-
-      // "text" argument.
-      let mut password_version_option: Option<enums::PasswordVersion> = None;
-      if let Some(text) = sub_matches.get_one::<String>("text") {
-        if let Some(password_version) = enums::get_password_version(text.as_str()){
-          password_version_option = Some(password_version);
-        }else {
-          print_text_arg_message();
-          return;
-        };
-      }
-
       // "memory" flag.
       let to_export_memory_dump = sub_matches.get_flag("memory");
-
-      // "cheat" argument.
-      let mut cheat_version_option: Option<enums::CheatVersion> = None;
-      if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
-        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()){
-          cheat_version_option = Some(cheat_version);
-        }else {
-          print_cheat_arg_message();
-          return;
-        };
-      }
-
       // "export" flag.
       let to_export_data_text = sub_matches.get_flag("export");
 
@@ -312,6 +312,31 @@ fn main() {
     }
     // "txt" subcommand.
     Some(("txt", sub_matches)) => {
+      // We should check the validity of "grade" and "cheat" arguments first.
+      // "grade" argument.
+      let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
+      if let Some(grade) = sub_matches.get_one::<String>("grade") {
+        let target_password_grade;
+        if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()) {
+          target_password_grade = password_grade;
+        } else {
+          print_grade_arg_message();
+          return;
+        };
+        target_password_grade_option = Some(target_password_grade);
+      }
+
+      // "cheat" argument.
+      let mut cheat_version_option: Option<enums::CheatVersion> = None;
+      if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
+        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()) {
+          cheat_version_option = Some(cheat_version);
+        } else {
+          print_cheat_arg_message();
+          return;
+        };
+      }
+
       // Read password text file.
       let txt_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
       let mut input_file = File::open(txt_input_path).expect("An error occurred while opening save file!");
@@ -353,19 +378,10 @@ fn main() {
         return;
       }
 
-      // "grade" argument.
+      // Check if it is possible to downgrade password
       let source_password_grade = enums::get_password_grade_by_bytes_len(password_bytes.len());
-      let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
-      let mut is_no_need_to_downgrade = false;
-      if let Some(grade) = sub_matches.get_one::<String>("grade") {
-        let target_password_grade;
-        if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()){
-          target_password_grade = password_grade;
-        }else {
-          print_grade_arg_message();
-          return;
-        };
-        target_password_grade_option = Some(target_password_grade);
+      let mut is_no_need_to_downgrade = true;
+      if let Some(target_password_grade) = target_password_grade_option {
         if sav::can_downgrade(source_password_grade, target_password_grade) {
           is_no_need_to_downgrade = sav::no_need_to_downgrade(source_password_grade, target_password_grade);
         } else {
@@ -376,21 +392,8 @@ fn main() {
 
       // "text" flag.
       let to_convert_password = sub_matches.get_flag("text");
-
       // "memory" flag.
       let to_export_memory_dump = sub_matches.get_flag("memory");
-
-      // "cheat" argument.
-      let mut cheat_version_option: Option<enums::CheatVersion> = None;
-      if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
-        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()){
-          cheat_version_option = Some(cheat_version);
-        }else {
-          print_cheat_arg_message();
-          return;
-        };
-      }
-
       // "export" flag.
       let to_export_data_text = sub_matches.get_flag("export");
 
@@ -445,6 +448,42 @@ fn main() {
     }
     // "dmp" subcommand
     Some(("dmp", sub_matches)) => {
+      // We should check the validity of "grade", "text" and "cheat" arguments first.
+      // "grade" argument.
+      let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
+      if let Some(grade) = sub_matches.get_one::<String>("grade") {
+        let target_password_grade;
+        if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()) {
+          target_password_grade = password_grade;
+        } else {
+          print_grade_arg_message();
+          return;
+        };
+        target_password_grade_option = Some(target_password_grade);
+      }
+
+      // "text" argument.
+      let mut password_version_option: Option<enums::PasswordVersion> = None;
+      if let Some(text) = sub_matches.get_one::<String>("text") {
+        if let Some(password_version) = enums::get_password_version(text.as_str()) {
+          password_version_option = Some(password_version);
+        } else {
+          print_text_arg_message();
+          return;
+        };
+      }
+
+      // "cheat" argument.
+      let mut cheat_version_option: Option<enums::CheatVersion> = None;
+      if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
+        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()) {
+          cheat_version_option = Some(cheat_version);
+        } else {
+          print_cheat_arg_message();
+          return;
+        };
+      }
+
       // Read password memory dump file.
       let dmp_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
       let mut input_file = File::open(dmp_input_path).expect("An error occurred while opening save file!");
@@ -474,47 +513,16 @@ fn main() {
         return;
       }
 
-      // "grade" argument.
+      // Check if it is possible to downgrade password
       let source_password_grade = enums::get_password_grade_by_bytes_len(password_bytes.len());
-      let mut target_password_grade_option: Option<enums::PasswordGrade> = None;
-      let mut is_no_need_to_downgrade = false;
-      if let Some(grade) = sub_matches.get_one::<String>("grade") {
-        let target_password_grade;
-        if let Some(password_grade) = enums::get_password_grade_by_arg(grade.as_str()){
-          target_password_grade = password_grade;
-        }else {
-          print_grade_arg_message();
-          return;
-        };
-        target_password_grade_option = Some(target_password_grade);
+      let mut is_no_need_to_downgrade = true;
+      if let Some(target_password_grade) = target_password_grade_option {
         if sav::can_downgrade(source_password_grade, target_password_grade) {
           is_no_need_to_downgrade = sav::no_need_to_downgrade(source_password_grade, target_password_grade);
         } else {
           eprintln!("It is not possible to downgrade your password to target password grade!");
           return;
         }
-      }
-
-      // "text" argument.
-      let mut password_version_option: Option<enums::PasswordVersion> = None;
-      if let Some(text) = sub_matches.get_one::<String>("text") {
-        if let Some(password_version) = enums::get_password_version(text.as_str()){
-          password_version_option = Some(password_version);
-        }else {
-          print_text_arg_message();
-          return;
-        };
-      }
-
-      // "cheat" argument.
-      let mut cheat_version_option: Option<enums::CheatVersion> = None;
-      if let Some(cheat) = sub_matches.get_one::<String>("cheat") {
-        if let Some(cheat_version) = enums::get_cheat_version(cheat.as_str()){
-          cheat_version_option = Some(cheat_version);
-        }else {
-          print_cheat_arg_message();
-          return;
-        };
       }
 
       // "export" flag.
@@ -566,21 +574,21 @@ fn main() {
   }
 }
 
-fn print_grade_arg_message(){
+fn print_grade_arg_message() {
   eprintln!("Please input a valid password grade!");
   eprintln!("Available values: g, s, b");
   eprintln!("g: Gold, s: Silver, b: Bronze");
   eprintln!("Example: -g g");
 }
 
-fn print_text_arg_message(){
+fn print_text_arg_message() {
   eprintln!("Please input a valid password version!");
   eprintln!("Available values: j, e");
   eprintln!("j: Japanese, e: English");
   eprintln!("Example: -t e");
 }
 
-fn print_cheat_arg_message(){
+fn print_cheat_arg_message() {
   eprintln!("Please input a valid cheat version!");
   eprintln!("Available values: j, u, e, g, s, f, i");
   eprintln!("j: Japan,   u: USA/Europe, e: USA/Europe");
