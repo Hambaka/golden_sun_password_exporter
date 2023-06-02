@@ -10,10 +10,19 @@ use std::string::String;
 use clap::{arg, ArgAction, ArgGroup, Command, value_parser};
 
 fn main() {
+  // "long_about" looks weird?
+  let mut about_string = String::new();
+  about_string.push_str("A simple tool for a GBA game called Golden Sun.\n\n");
+  about_string.push_str("You can use this tool to export password data to the following types of files:\n");
+  about_string.push_str("1. Password text file. (Japanese, English)\n");
+  about_string.push_str("2. Password memory dump binary file.\n");
+  about_string.push_str("3. Password cheat codes text file for Golden Sun: The Lost Age. (Japan, USA/Europe, Germany, Spain, France, Italy)\n");
+  about_string.push_str("4. Save data text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet.");
+
   let matches = Command::new("Golden Sun Password Exporter")
     .version("v0.4.2")
     .author("Hambaka")
-    .about("A simple tool for a GBA game called Golden Sun.\nYou can use this tool to export password data to the following types of files:\n1. Password text file (Japanese, English)\n2. Password memory dump binary file\n3. Password cheat codes text file for Golden Sun: The Lost Age (Japan, USA/Europe, Germany, Spain, France, Italy)\n4. Save data text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet")
+    .about(about_string)
     .allow_negative_numbers(true)
     .propagate_version(true)
     .subcommand_required(true)
