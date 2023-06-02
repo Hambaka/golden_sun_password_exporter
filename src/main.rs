@@ -11,9 +11,9 @@ use clap::{arg, ArgAction, ArgGroup, Command, value_parser};
 
 fn main() {
   let matches = Command::new("Golden Sun Password Exporter")
-    .version("v0.4.1")
+    .version("v0.4.2")
     .author("Hambaka")
-    .about("A simple tool for a GBA game called Golden Sun\nYou can use this tool to export Golden Sun password to a text file/memory dump binary file/cheat file")
+    .about("A simple tool for a GBA game called Golden Sun.\nYou can use this tool to export password data to the following types of files:\n1. Password text file (Japanese, English)\n2. Password memory dump binary file\n3. Password cheat codes text file for Golden Sun: The Lost Age (Japan, USA/Europe, Germany, Spain, France, Italy)\n4. Save data text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet")
     .allow_negative_numbers(true)
     .propagate_version(true)
     .subcommand_required(true)
@@ -21,7 +21,7 @@ fn main() {
     // "sav" subcommand.
     .subcommand(
       Command::new("sav")
-        .about("Read a save file to generate password text/memory dump binary/cheat files")
+        .about("Export password data by reading a Golden Sun save file")
         .arg(
           arg!(
             <INPUT_FILE> "Golden Sun save file"
@@ -38,14 +38,14 @@ fn main() {
         )
         .arg(
           arg!(
-            -a --all "Export all existing save data in the save file"
+            -a --all "Export all existing valid save data in the save file"
           )
             .action(ArgAction::SetTrue)
             .required(false)
         )
         .arg(
           arg!(
-            -t --text <VALUE> "Generate password text file"
+            -t --text <VALUE> "Generate the specified version password text file"
           )
             .required(false)
         )
@@ -58,13 +58,13 @@ fn main() {
         )
         .arg(
           arg!(
-            -c --cheat <VALUE> "Generate password cheat codes for Golden Sun: The Lost Age"
+            -c --cheat <VALUE> "Generate the specified version password cheat codes text file"
           )
             .required(false)
         )
         .arg(
           arg!(
-            -e --export "Export data to a text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet"
+            -e --export "Export save data to a text file for Dyrati's \"Golden Sun Password Generator\""
           )
             .action(ArgAction::SetTrue)
             .required(false)
@@ -72,7 +72,7 @@ fn main() {
         .group(
           ArgGroup::new("sav_args")
             .required(true)
-            .args(["grade", "text", "memory", "cheat", "export"])
+            .args(["text", "memory", "cheat", "export"])
             .multiple(true)
         )
         .arg(
@@ -86,7 +86,7 @@ fn main() {
     // "txt" subcommand.
     .subcommand(
       Command::new("txt")
-        .about("Read a password text file to generate an another version password text/memory dump binary/cheat file")
+        .about("Export password data by reading a Golden Sun password text file")
         .arg(
           arg!(
             <INPUT_FILE> "Golden Sun password text file"
@@ -96,13 +96,13 @@ fn main() {
         )
         .arg(
           arg!(
-            -g --grade <VALUE> "Target password grade (only for downgrade)"
+            -g --grade <VALUE> "Target password grade (for downgrade only)"
           )
             .required(false)
         )
         .arg(
           arg!(
-            -t --text "Generate another version password text file"
+            -t --text "Convert password to another version and generate the converted file"
           )
             .action(ArgAction::SetTrue)
             .required(false)
@@ -116,13 +116,13 @@ fn main() {
         )
         .arg(
           arg!(
-            -c --cheat <VALUE> "Generate password cheat codes for Golden Sun: The Lost Age"
+            -c --cheat <VALUE> "Generate the specified version password cheat codes text file"
           )
             .required(false)
         )
         .arg(
           arg!(
-            -e --export "Export data to a text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet"
+            -e --export "Generate and export save data to a text file for Dyrati's \"Golden Sun Password Generator\""
           )
             .action(ArgAction::SetTrue)
             .required(false)
@@ -130,7 +130,7 @@ fn main() {
         .group(
           ArgGroup::new("txt_args")
             .required(true)
-            .args(["grade", "text", "memory", "cheat", "export"])
+            .args(["text", "memory", "cheat", "export"])
             .multiple(true)
         )
         .arg(
@@ -144,7 +144,7 @@ fn main() {
     // "dmp" subcommand.
     .subcommand(
       Command::new("dmp")
-        .about("Read a password memory dump binary file to generate a password text/cheat file")
+        .about("Export password data by reading a Golden Sun password memory dump binary file")
         .arg(
           arg!(
             <INPUT_FILE> "Golden Sun password memory dump binary file"
@@ -154,25 +154,25 @@ fn main() {
         )
         .arg(
           arg!(
-            -g --grade <VALUE> "Target password grade (only for downgrade)"
+            -g --grade <VALUE> "Target password grade (for downgrade only)"
           )
             .required(false)
         )
         .arg(
           arg!(
-            -t --text <VALUE> "Generate password text file"
+            -t --text <VALUE> "Generate the specified version password text file"
           )
             .required(false)
         )
         .arg(
           arg!(
-            -c --cheat <VALUE> "Generate password cheat codes for Golden Sun: The Lost Age"
+            -c --cheat <VALUE> "Generate the specified version password cheat codes text file"
           )
             .required(false)
         )
         .arg(
           arg!(
-            -e --export "Export data to a text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet"
+            -e --export "Generate and export save data to a text file for Dyrati's \"Golden Sun Password Generator\""
           )
             .action(ArgAction::SetTrue)
             .required(false)
@@ -180,7 +180,7 @@ fn main() {
         .group(
           ArgGroup::new("dmp_args")
             .required(true)
-            .args(["grade", "text", "cheat", "export"])
+            .args(["text", "cheat", "export"])
             .multiple(true)
         )
         .arg(

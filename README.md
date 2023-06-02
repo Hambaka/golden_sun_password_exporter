@@ -1,4 +1,4 @@
-# README（待完成）
+# README（待完善）
 [![zh-Hans](https://img.shields.io/badge/-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-black.svg?style=for-the-badge&logo=googletranslate&logoColor=yellow)](https://github.com/Hambaka/golden_sun_password_exporter/blob/main/README.md)
 [![en-US](https://img.shields.io/badge/-English-black.svg?style=for-the-badge&logo=googletranslate&logoColor=yellow)](https://github.com/Hambaka/golden_sun_password_exporter/blob/main/README.en-US.md)
 ---
@@ -9,60 +9,67 @@
 ![Platform](https://img.shields.io/badge/platform%20(x86--64)-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)
 [![Version](https://img.shields.io/github/v/release/Hambaka/golden_sun_password_exporter?label=version&style=flat-square)](https://github.com/Hambaka/golden_sun_password_exporter/releases/latest)
 
-　　读取《黄金太阳 开启的封印》的存档文件/密码文本文件/密码内存转储二进制文件，以生成可用于《黄金太阳 失落的时代》的密码文本文件/密码内存转储二进制文件/金手指文件。  
+为 GBA 上的 **《黄金太阳 开启的封印》** 开发的一个很简单的小工具，你可以使用本工具将密码导出为以下的几种文件：  
+- 密码文本文件（日文版，英文版）
+- 密码的内存转储二进制文件
+- 密码金手指文本文件，可在 **《黄金太阳 失落的时代》** 中使用（日，美，德，西，法，意版）
+- 存档数据的文本文件，可以在 Dyrati 的 ["黄金太阳密码生成器"](https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/) 表格中使用
 
-## 使用方法（待完成）
-### 命令总览
+## 使用方法
+### 命令一览
 ```
-使用方法： golden_sun_password_exporter <命令>
+使用方法：golden_sun_password_exporter.exe <命令>
 
 命令：
-  sav   读取存档文件以生成密码文本/内存转储/金手指
-  txt   读取密码文本文件以生成另一个版本的密码文本文件/生成内存转储/金手指
-  dmp   读取密码内存转储二进制文件来生成密码文本文件/金手指
+  sav   通过读取《黄金太阳 开启的封印》的存档文件来导出密码数据
+  txt   通过读取《黄金太阳 开启的封印》的密码文本文件来导出密码数据
+  dmp   通过读取《黄金太阳 开启的封印》密码的内存转储二进制文件来导出密码数据
 ```
-### 子命令：sav（待完成）
+### 子命令：`sav`
+通过读取《黄金太阳 开启的封印》的存档文件来导出密码数据。  
 ```
-使用方法： golden_sun_password_exporter sav [选项] --grade <密码级别> <--text <密码版本>|--memory|--cheat <金手指版本>|--export> <要读取的存档文件>
+使用方法：golden_sun_password_exporter.exe sav [选项] <--text <VALUE>|--memory|--cheat <VALUE>|--export> <INPUT_FILE>
 
 参数：
-  <要读取的存档文件>  《黄金太阳 开启的封印》的存档文件
+  <INPUT_FILE>  《黄金太阳 开启的封印》的存档文件
 
 选项：
-  -g, --grade <密码级别>              生成的密码级别
-  -a, --all                           导出存档文件中的所有存档的数据
-  -t, --text <密码版本>               密码版本
-  -m, --memory                        生成密码的内存转储文件
-  -c, --cheat <金手指版本>            生成指定语言版本的密码金手指
-  -e, --export                        导出游戏数据到文本文件，可用搭配 Dyrati 的 "Golden Sun Password Generator" 密码生成器电子表格一起使用
-  -o, --output <输出文件夹路径>       输出文件夹路径
+  -g, --grade <VALUE>        目标密码级别 [默认值：g]
+  -a, --all                  导出存档文件中所有有效的存档数据
+  -t, --text <VALUE>         生成指定版本的密码文本文件
+  -m, --memory               生成密码的内存转储二进制文件
+  -c, --cheat <VALUE>        生成指定版本的密码金手指文本文件
+  -e, --export               将存档数据导出为文本文件，可搭配 Dyrati 的“黄金太阳密码生成器”使用
+  -o, --output <OUTPUT_DIR>  输出文件夹
 ```
-### 子命令：txt（待完成）
+### 子命令：`txt`
+通过读取《黄金太阳 开启的封印》的密码文本文件来导出密码数据。  
 ```
-使用方法： golden_sun_password_exporter txt [选项] <--grade <密码级别>|--text|--memory|--cheat <金手指版本>|--export> <要读取的密码文本文件>
+使用方法：golden_sun_password_exporter.exe txt [选项] <--text|--memory|--cheat <VALUE>|--export> <INPUT_FILE>
 
 参数：
-  <要读取的密码文本文件>  黄金太阳的密码文本文件
-
-Options:
-  -g, --grade <密码级别>              生成的密码级别
-  -t, --text                          转换文本密码至另一个版本
-  -m, --memory                        生成密码的内存转储文件
-  -c, --cheat <金手指版本>            生成指定语言版本的密码金手指
-  -e, --export                        导出游戏数据到文本文件，可用搭配 Dyrati 的 "Golden Sun Password Generator" 密码生成器电子表格一起使用
-  -o, --output <输出文件夹路径>       输出文件夹路径
-```
-### 子命令：dmp（待完成）
-```
-使用方法： golden_sun_password_exporter dmp [选项] <--grade <密码级别>|--text <密码版本>|--cheat <金手指版本>|--export> <要读取的密码内存转储文件>
-
-参数：
-  <要读取的密码内存转储文件>  黄金太阳的密码内存转储二进制文件
+  <INPUT_FILE>  《黄金太阳 开启的封印》的密码文本文件
 
 选项：
-  -g, --grade <密码级别>              生成的密码级别
-  -t, --text <密码版本>               生成密码文本文件
-  -c, --cheat <金手指版本>            生成指定语言版本的密码金手指
-  -e, --export                        导出游戏数据到文本文件，可用搭配 Dyrati 的 "Golden Sun Password Generator" 密码生成器电子表格一起使用
-  -o, --output <输出文件夹路径>       输出文件夹路径
+  -g, --grade <VALUE>        目标密码级别（仅用于降级）
+  -t, --text                 转换密码文本至另一个版本，并生成转换后的密码文本文件
+  -m, --memory               生成密码的内存转储二进制文件
+  -c, --cheat <VALUE>        生成指定版本的密码金手指文本文件
+  -e, --export               生成存档数据并将其导出为文本文件，可搭配 Dyrati 的“黄金太阳密码生成器”使用
+  -o, --output <OUTPUT_DIR>  输出文件夹
+```
+### 子命令：`dmp`
+通过读取《黄金太阳 开启的封印》密码的内存转储二进制文件来导出密码数据。  
+```
+使用方法：golden_sun_password_exporter.exe dmp [选项] <--text <VALUE>|--cheat <VALUE>|--export> <INPUT_FILE>
+
+参数：
+  <INPUT_FILE>  《黄金太阳 开启的封印》密码的内存转储二进制文件
+
+选项：
+  -g, --grade <VALUE>        目标密码级别（仅用于降级）
+  -t, --text <VALUE>         生成指定版本的密码文本文件
+  -c, --cheat <VALUE>        生成指定版本的密码金手指文本文件
+  -e, --export               生成存档数据并将其导出为文本文件，可搭配 Dyrati 的“黄金太阳密码生成器”使用
+  -o, --output <OUTPUT_DIR>  输出文件夹
 ```

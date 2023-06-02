@@ -733,8 +733,8 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
      256 -> 0x100 -> 1 0000 0000
 
      Max len
-     16  -> 0x10
-     61  -> 0x3D
+     16  -> 0x10  ->      1 0000
+     61  -> 0x3D  ->     11 1101
      260 -> 0x104 -> 1 0000 0100 */
   for (i, data) in password_bytes.iter().enumerate() {
     bytes_data[i] = ((u16::from(*data) + 0x200 - (i as u16)) & 0x3F) as u8;
@@ -986,11 +986,17 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
       70
     };
     for (i, stats_per_person) in stats.iter_mut().enumerate() {
+      // HP
       stats_per_person[0] = password_bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
+      // EP
       stats_per_person[1] = password_bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
+      // Attack
       stats_per_person[2] = password_bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
+      // Defense
       stats_per_person[3] = password_bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
+      // Agility
       stats_per_person[4] = password_bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
+      // Luck
       stats_per_person[5] = password_bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
     }
   }

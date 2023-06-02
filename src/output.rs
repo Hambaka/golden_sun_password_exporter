@@ -122,8 +122,8 @@ pub fn write_cheat_file(password_bytes: &[u8], cheat_version: enums::CheatVersio
     }
   }
   let output_path = Path::new(sub_dir_str).join("cheats.txt");
-  let mut output_file = File::create(output_path).expect("Failed to create cheat file!");
-  output_file.write_all(text.as_bytes()).expect("Failed to write to cheat file!");
+  let mut output_file = File::create(output_path).expect("Failed to create cheat codes text file!");
+  output_file.write_all(text.as_bytes()).expect("Failed to write to cheat codes text file!");
 }
 
 pub fn write_game_data_text_file(text_data: &str, output_dir_str: &str) {
