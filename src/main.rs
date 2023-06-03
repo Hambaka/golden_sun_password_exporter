@@ -27,178 +27,59 @@ fn main() {
     .propagate_version(true)
     .subcommand_required(true)
     .arg_required_else_help(true)
-    // "sav" subcommand.
     .subcommand(
       Command::new("sav")
         .about("Export password data by reading a Golden Sun save file")
-        .arg(
-          arg!(
-            <INPUT_FILE> "Golden Sun save file"
-          )
-            .value_parser(value_parser!(PathBuf))
-            .required(true)
+        .args(&[
+          arg!(<INPUT_FILE> "Golden Sun save file").value_parser(value_parser!(PathBuf)).required(true),
+          arg!(-g --grade <VALUE> "Target password grade").default_value("g"),
+          arg!(-a --all "Export all existing valid save data in the save file").action(ArgAction::SetTrue),
+          arg!(-t --text <VALUE> "Generate the specified version password text file"),
+          arg!(-m --memory "Generate password memory dump binary file").action(ArgAction::SetTrue),
+          arg!(-c --cheat <VALUE> "Generate the specified version password cheat codes text file"),
+          arg!(-e --export "Export save data to a text file for Dyrati's \"Golden Sun Password Generator\"").action(ArgAction::SetTrue),
+          arg!(-o --output <OUTPUT_DIR> "Output directory").value_parser(value_parser!(PathBuf))
+        ])
+        .group(ArgGroup::new("sav_args")
+          .args(["text", "memory", "cheat", "export"])
+          .required(true)
+          .multiple(true)
         )
-        .arg(
-          arg!(
-            -g --grade <VALUE> "Target password grade"
-          )
-            .required(false)
-            .default_value("g")
-        )
-        .arg(
-          arg!(
-            -a --all "Export all existing valid save data in the save file"
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -t --text <VALUE> "Generate the specified version password text file"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -m --memory "Generate password memory dump binary file"
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -c --cheat <VALUE> "Generate the specified version password cheat codes text file"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -e --export "Export save data to a text file for Dyrati's \"Golden Sun Password Generator\""
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .group(
-          ArgGroup::new("sav_args")
-            .required(true)
-            .args(["text", "memory", "cheat", "export"])
-            .multiple(true)
-        )
-        .arg(
-          arg!(
-            -o --output <OUTPUT_DIR> "Output directory"
-          )
-            .value_parser(value_parser!(PathBuf))
-            .required(false)
-        ),
     )
-    // "txt" subcommand.
     .subcommand(
       Command::new("txt")
         .about("Export password data by reading a Golden Sun password text file")
-        .arg(
-          arg!(
-            <INPUT_FILE> "Golden Sun password text file"
-          )
-            .value_parser(value_parser!(PathBuf))
-            .required(true)
+        .args(&[
+          arg!(<INPUT_FILE> "Golden Sun password text file").value_parser(value_parser!(PathBuf)).required(true),
+          arg!(-g --grade <VALUE> "Target password grade (for downgrade only)"),
+          arg!(-t --text "Convert password to another version and generate the converted file").action(ArgAction::SetTrue),
+          arg!(-m --memory "Generate password memory dump binary file").action(ArgAction::SetTrue),
+          arg!(-c --cheat <VALUE> "Generate the specified version password cheat codes text file"),
+          arg!(-e --export "Generate and export save data to a text file for Dyrati's \"Golden Sun Password Generator\"").action(ArgAction::SetTrue),
+          arg!(-o --output <OUTPUT_DIR> "Output directory").value_parser(value_parser!(PathBuf))
+        ])
+        .group(ArgGroup::new("txt_args")
+          .args(["text", "memory", "cheat", "export"])
+          .required(true)
+          .multiple(true)
         )
-        .arg(
-          arg!(
-            -g --grade <VALUE> "Target password grade (for downgrade only)"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -t --text "Convert password to another version and generate the converted file"
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -m --memory "Generate password memory dump binary file"
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -c --cheat <VALUE> "Generate the specified version password cheat codes text file"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -e --export "Generate and export save data to a text file for Dyrati's \"Golden Sun Password Generator\""
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .group(
-          ArgGroup::new("txt_args")
-            .required(true)
-            .args(["text", "memory", "cheat", "export"])
-            .multiple(true)
-        )
-        .arg(
-          arg!(
-            -o --output <OUTPUT_DIR> "Output directory"
-          )
-            .value_parser(value_parser!(PathBuf))
-            .required(false)
-        ),
     )
-    // "dmp" subcommand.
     .subcommand(
       Command::new("dmp")
         .about("Export password data by reading a Golden Sun password memory dump binary file")
-        .arg(
-          arg!(
-            <INPUT_FILE> "Golden Sun password memory dump binary file"
-          )
-            .value_parser(value_parser!(PathBuf))
-            .required(true)
+        .args(&[
+          arg!(<INPUT_FILE> "Golden Sun password memory dump binary file").value_parser(value_parser!(PathBuf)).required(true),
+          arg!(-g --grade <VALUE> "Target password grade (for downgrade only)"),
+          arg!(-t --text <VALUE> "Generate the specified version password text file"),
+          arg!(-c --cheat <VALUE> "Generate the specified version password cheat codes text file"),
+          arg!(-e --export "Generate and export save data to a text file for Dyrati's \"Golden Sun Password Generator\"").action(ArgAction::SetTrue),
+          arg!(-o --output <OUTPUT_DIR> "Output directory").value_parser(value_parser!(PathBuf))
+        ])
+        .group(ArgGroup::new("dmp_args")
+          .args(["text", "cheat", "export"])
+          .required(true)
+          .multiple(true)
         )
-        .arg(
-          arg!(
-            -g --grade <VALUE> "Target password grade (for downgrade only)"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -t --text <VALUE> "Generate the specified version password text file"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -c --cheat <VALUE> "Generate the specified version password cheat codes text file"
-          )
-            .required(false)
-        )
-        .arg(
-          arg!(
-            -e --export "Generate and export save data to a text file for Dyrati's \"Golden Sun Password Generator\""
-          )
-            .action(ArgAction::SetTrue)
-            .required(false)
-        )
-        .group(
-          ArgGroup::new("dmp_args")
-            .required(true)
-            .args(["text", "cheat", "export"])
-            .multiple(true)
-        )
-        .arg(
-          arg!(
-            -o --output <OUTPUT_DIR> "Output directory"
-          )
-            .value_parser(value_parser!(PathBuf))
-            .required(false)
-        ),
     )
     .get_matches();
 
