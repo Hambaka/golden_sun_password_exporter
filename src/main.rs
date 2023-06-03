@@ -122,7 +122,6 @@ fn main() {
       // Read save file.
       let sav_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
       let mut input_file = File::open(sav_input_path).expect("An error occurred while opening save file!");
-
       /* Check the size of save file.
          The size of save file should be 64KB,
          though the .SaveRAM file created by Bizhawk is 128KB.
@@ -132,13 +131,6 @@ fn main() {
         eprintln!("The size of save file is not valid!");
         return;
       }
-
-      /* "all" flag.
-         Default value is "false", only export password from clear save data.
-         Set it to "true" will export password from all existing save data in save file,
-         even it is not a clear data. */
-      let to_export_all_data = sub_matches.get_flag("all");
-
       let mut raw_save_file = Vec::new();
       input_file.read_to_end(&mut raw_save_file).unwrap();
 
@@ -151,6 +143,11 @@ fn main() {
         return;
       };
 
+      /* "all" flag.
+         Default value is "false", only export password from clear save data.
+         Set it to "true" will export password from all existing save data in save file,
+         even it is not a clear data. */
+      let to_export_all_data = sub_matches.get_flag("all");
       /* Get save data from save file with slot number.
          Also check if the save data is clear data. */
       let save_data_map = sav::get_raw_save_data_map(to_export_all_data, &raw_save_file, loop_start_index);
@@ -162,11 +159,6 @@ fn main() {
         }
         return;
       }
-
-      // "memory" flag.
-      let to_export_memory_dump = sub_matches.get_flag("memory");
-      // "export" flag.
-      let to_export_data_text = sub_matches.get_flag("export");
 
       // Create main output directory.
       let output_dir_str;
@@ -185,13 +177,16 @@ fn main() {
         if let Some(password_version) = password_version_option {
           output::write_password_text_file_with_bytes(&password_bytes, password_version, sub_dir_str.as_str());
         }
-        if to_export_memory_dump {
+
+        if sub_matches.get_flag("memory") {
           output::write_memory_dump_file(&password_bytes, sub_dir_str.as_str());
         }
+
         if let Some(cheat_version) = cheat_version_option {
           output::write_cheat_file(&password_bytes, cheat_version, sub_dir_str.as_str());
         }
-        if to_export_data_text {
+
+        if sub_matches.get_flag("export") {
           if matches!(target_password_grade, enums::PasswordGrade::Gold) {
             output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()).as_str(), sub_dir_str.as_str());
           } else {
@@ -229,47 +224,29 @@ fn main() {
 
       // Read password text file.
       let txt_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
-      let mut input_file = File::open(txt_input_path).expect("An error occurred while opening save file!");
+      let mut input_file = File::open(txt_input_path).expect("An error occurred while opening password text file!");
       let mut password = String::new();
       input_file.read_to_string(&mut password).unwrap();
-
       // If the text file is empty, exit.
       if password.is_empty() {
         eprintln!("The text file is empty!");
         return;
       }
-
-      // Check its password version and its character count.
-      let password_version = convert::get_password_version(password.as_ref());
       // Remove all line break and whitespace.
       let password_without_whitespace = convert::remove_whitespace(password.as_ref());
-      // Check password's length.
-      if password_without_whitespace.chars().count() != 16 && password_without_whitespace.chars().count() != 61 && password_without_whitespace.chars().count() != 260 {
-        eprintln!("Password's length is not valid!");
-        return;
-      }
-      // Check if it contains invalid char
-      let has_invalid_char = match password_version {
-        enums::PasswordVersion::Japanese => convert::contains_invalid_char_jp(password_without_whitespace.as_str()),
-        enums::PasswordVersion::English => convert::contains_invalid_char_en(password_without_whitespace.as_str()),
+      // Check password's length, and get its grade.
+      let chars_count = password_without_whitespace.chars().count();
+      let source_password_grade = match chars_count {
+        260 => enums::PasswordGrade::Gold,
+        61 => enums::PasswordGrade::Silver,
+        16 => enums::PasswordGrade::Bronze,
+        _ => {
+          eprintln!("Password's length is not valid!");
+          return;
+        }
       };
-      if has_invalid_char {
-        eprintln!("Password contains invalid character!");
-        return;
-      }
-
-      // Check if the password is valid;
-      let password_bytes = convert::txt_to_dmp(password_without_whitespace.as_str(), password_version);
-      let mut password_bits;
-      if let Some(bits) = sav::get_valid_password_bits_option(password_bytes.as_slice(), true) {
-        password_bits = bits;
-      } else {
-        eprintln!("Password is invalid!");
-        return;
-      }
 
       // Check if it is possible to downgrade password
-      let source_password_grade = enums::get_password_grade_by_bytes_len(password_bytes.len());
       let mut is_no_need_to_downgrade = true;
       if let Some(target_password_grade) = target_password_grade_option {
         if sav::can_downgrade(source_password_grade, target_password_grade) {
@@ -280,21 +257,29 @@ fn main() {
         }
       }
 
-      // "text" flag.
-      let to_convert_password = sub_matches.get_flag("text");
-      // "memory" flag.
-      let to_export_memory_dump = sub_matches.get_flag("memory");
-      // "export" flag.
-      let to_export_data_text = sub_matches.get_flag("export");
-
-      // Create output directory.
-      let output_dir_str;
-      if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
-        output_dir_str = output::create_output_dir(output_path_buf, true);
-      } else {
-        output_dir_str = output::create_output_dir(txt_input_path, false);
+      // Check its password version.
+      let password_version = convert::get_password_version(password_without_whitespace.as_ref());
+      // Check if it contains invalid char
+      let has_invalid_char = match password_version {
+        enums::PasswordVersion::Japanese => convert::contains_invalid_char_jp(password_without_whitespace.as_str()),
+        enums::PasswordVersion::English => convert::contains_invalid_char_en(password_without_whitespace.as_str()),
+      };
+      if has_invalid_char {
+        eprintln!("Password contains invalid character!");
+        return;
       }
 
+      // Check if the password is valid.
+      let password_bytes = convert::txt_to_dmp(password_without_whitespace.as_str(), password_version);
+      let mut password_bits;
+      if let Some(bits) = sav::get_valid_password_bits_option(password_bytes.as_slice(), true) {
+        password_bits = bits;
+      } else {
+        eprintln!("Password is invalid!");
+        return;
+      }
+
+      // Generate save data, and set target password bytes
       let save_data = sav::get_save_data_with_password_bits(&mut password_bits, source_password_grade);
       let target_password_bytes;
       if let Some(target_password_grade) = target_password_grade_option {
@@ -307,8 +292,16 @@ fn main() {
         target_password_bytes = password_bytes;
       }
 
+      // Create output directory.
+      let output_dir_str;
+      if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
+        output_dir_str = output::create_output_dir(output_path_buf, true);
+      } else {
+        output_dir_str = output::create_output_dir(txt_input_path, false);
+      }
+
       // Write files.
-      if to_convert_password {
+      if sub_matches.get_flag("text") {
         if target_password_grade_option.is_none() {
           output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
         } else {
@@ -318,13 +311,15 @@ fn main() {
         output::write_password_text_file_with_bytes(&target_password_bytes, password_version, output_dir_str.as_str());
       }
 
-      if to_export_memory_dump {
+      if sub_matches.get_flag("memory") {
         output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
       }
+
       if let Some(cheat_version) = cheat_version_option {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
       }
-      if to_export_data_text {
+
+      if sub_matches.get_flag("export") {
         if let Some(target_password_grade) = target_password_grade_option {
           if is_no_need_to_downgrade {
             output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
@@ -376,17 +371,32 @@ fn main() {
 
       // Read password memory dump file.
       let dmp_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
-      let mut input_file = File::open(dmp_input_path).expect("An error occurred while opening save file!");
-
-      // Check its file size.
+      let mut input_file = File::open(dmp_input_path).expect("An error occurred while opening memory dump file!");
+      // Check its file size, and get its grade.
       let file_size = input_file.metadata().unwrap().len();
-      if file_size != 16 && file_size != 61 && file_size != 260 {
-        eprintln!("The size of password memory dump file is not valid!");
-        return;
+      let source_password_grade = match file_size {
+        260 => enums::PasswordGrade::Gold,
+        61 => enums::PasswordGrade::Silver,
+        16 => enums::PasswordGrade::Bronze,
+        _ => {
+          eprintln!("The size of password memory dump file is not valid!");
+          return;
+        }
+      };
+
+      // Check if it is possible to downgrade password
+      let mut is_no_need_to_downgrade = true;
+      if let Some(target_password_grade) = target_password_grade_option {
+        if sav::can_downgrade(source_password_grade, target_password_grade) {
+          is_no_need_to_downgrade = sav::no_need_to_downgrade(source_password_grade, target_password_grade);
+        } else {
+          eprintln!("It is not possible to downgrade your password to target password grade!");
+          return;
+        }
       }
+
       let mut password_bytes = Vec::new();
       input_file.read_to_end(&mut password_bytes).unwrap();
-
       // Check if it has contains invalid byte
       let has_invalid_byte = convert::contains_invalid_byte(password_bytes.as_slice());
       if has_invalid_byte {
@@ -403,29 +413,7 @@ fn main() {
         return;
       }
 
-      // Check if it is possible to downgrade password
-      let source_password_grade = enums::get_password_grade_by_bytes_len(password_bytes.len());
-      let mut is_no_need_to_downgrade = true;
-      if let Some(target_password_grade) = target_password_grade_option {
-        if sav::can_downgrade(source_password_grade, target_password_grade) {
-          is_no_need_to_downgrade = sav::no_need_to_downgrade(source_password_grade, target_password_grade);
-        } else {
-          eprintln!("It is not possible to downgrade your password to target password grade!");
-          return;
-        }
-      }
-
-      // "export" flag.
-      let to_export_data_text = sub_matches.get_flag("export");
-
-      // Create output directory.
-      let output_dir_str;
-      if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
-        output_dir_str = output::create_output_dir(output_path_buf, true);
-      } else {
-        output_dir_str = output::create_output_dir(dmp_input_path, false);
-      }
-
+      // Generate save data, and set target password bytes
       let save_data = sav::get_save_data_with_password_bits(&mut password_bits, source_password_grade);
       let target_password_bytes;
       if let Some(target_password_grade) = target_password_grade_option {
@@ -438,17 +426,28 @@ fn main() {
         target_password_bytes = password_bytes;
       }
 
+      // Create output directory.
+      let output_dir_str;
+      if let Some(output_path_buf) = sub_matches.get_one::<PathBuf>("output") {
+        output_dir_str = output::create_output_dir(output_path_buf, true);
+      } else {
+        output_dir_str = output::create_output_dir(dmp_input_path, false);
+      }
+
       // Write files.
       if target_password_grade_option.is_some() && !is_no_need_to_downgrade {
         output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
       }
+
       if let Some(password_version) = password_version_option {
         output::write_password_text_file_with_bytes(&target_password_bytes, password_version, output_dir_str.as_str());
       }
+
       if let Some(cheat_version) = cheat_version_option {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
       }
-      if to_export_data_text {
+
+      if sub_matches.get_flag("export") {
         if let Some(target_password_grade) = target_password_grade_option {
           if is_no_need_to_downgrade {
             output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());

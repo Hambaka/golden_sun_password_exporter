@@ -90,8 +90,8 @@ pub fn write_converted_password_text_file(converted_password_text: &str, output_
 /// Though you have to choose the correct address and import it, you can check the address in `get_cheat_address` function of "enums.rs".
 pub fn write_memory_dump_file(password_bytes: &[u8], sub_dir_str: &str) {
   let output_path = Path::new(sub_dir_str).join("memory.dmp");
-  let mut output_file = File::create(output_path).expect("Failed to create memory dump file!");
-  output_file.write_all(password_bytes).expect("Failed to write to memory dump file!");
+  let mut output_file = File::create(output_path).expect("Failed to create memory dump binary file!");
+  output_file.write_all(password_bytes).expect("Failed to write to memory dump binary file!");
 }
 
 /// Well, cheat file is much easier to use,
@@ -121,13 +121,13 @@ pub fn write_cheat_file(password_bytes: &[u8], cheat_version: enums::CheatVersio
       break;
     }
   }
-  let output_path = Path::new(sub_dir_str).join("cheats.txt");
+  let output_path = Path::new(sub_dir_str).join("cheat_codes.txt");
   let mut output_file = File::create(output_path).expect("Failed to create cheat codes text file!");
   output_file.write_all(text.as_bytes()).expect("Failed to write to cheat codes text file!");
 }
 
 pub fn write_game_data_text_file(text_data: &str, output_dir_str: &str) {
-  let output_path = Path::new(output_dir_str).join("exported_game_data.txt");
-  let mut output_file = File::create(output_path).expect("Failed to create exported game data text file!");
-  output_file.write_all(text_data.as_bytes()).expect("Failed to write to exported game data text file!");
+  let output_path = Path::new(output_dir_str).join("exported_data.txt");
+  let mut output_file = File::create(output_path).expect("Failed to create exported save data text file!");
+  output_file.write_all(text_data.as_bytes()).expect("Failed to write to exported save data text file!");
 }
