@@ -20,7 +20,7 @@ fn main() {
   about_string.push_str("4. Save data text file, which can be used in Dyrati's \"Golden Sun Password Generator\" spreadsheet.");
 
   let matches = Command::new("Golden Sun Password Exporter")
-    .version("v0.4.2")
+    .version("v0.4.3")
     .author("Hambaka")
     .about(about_string)
     .allow_negative_numbers(true)
