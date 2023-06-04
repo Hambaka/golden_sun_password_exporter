@@ -1,7 +1,3 @@
-# README (TODO)
-[![zh-Hans](https://img.shields.io/badge/-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-black.svg?style=for-the-badge&logo=googletranslate&logoColor=yellow)](https://github.com/Hambaka/golden_sun_password_exporter/blob/main/README.md)
-[![en-US](https://img.shields.io/badge/-English-black.svg?style=for-the-badge&logo=googletranslate&logoColor=yellow)](https://github.com/Hambaka/golden_sun_password_exporter/blob/main/README.en-US.md)
----
 # golden_sun_password_exporter
 
 ![Rust](https://img.shields.io/badge/language-Rust-DEA584.svg?style=flat-square&logo=rust)
@@ -10,25 +6,37 @@
 [![Version](https://img.shields.io/github/v/release/Hambaka/golden_sun_password_exporter?label=version&style=flat-square)](https://github.com/Hambaka/golden_sun_password_exporter/releases/latest)
 
 A simple tool for a GBA game called **Golden Sun**. You can use this tool to export password data to the following types of files:  
+
 - Password text file (Japanese, English)
 - Password memory dump binary file
 - Password cheat codes text file for **Golden Sun: The Lost Age** (Japan, USA/Europe, Germany, Spain, France, Italy)
 - Save data text file, which can be used in Dyrati's ["Golden Sun Password Generator"](https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/) spreadsheet
 
+## README  
+
+[![zh-Hans](https://img.shields.io/badge/-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-black.svg?style=for-the-badge&logo=googletranslate&logoColor=gold)](https://github.com/Hambaka/golden_sun_password_exporter/blob/main/README.md)
+[![en-US](https://img.shields.io/badge/-English%20(TODO)-black.svg?style=for-the-badge&logo=googletranslate&logoColor=gold)](https://github.com/Hambaka/golden_sun_password_exporter/blob/main/README.en-US.md)
+
+
 ## Usage  
-### Command List 
-```
-Usage: golden_sun_password_exporter.exe <COMMAND>
+
+### Command List
+
+```text
+Usage: golden_sun_password_exporter <COMMAND>
 
 Commands:
   sav   Export password data by reading a Golden Sun save file
   txt   Export password data by reading a Golden Sun password text file
   dmp   Export password data by reading a Golden Sun password memory dump binary file
 ```
+
 ### Subcommand: `sav`  
+
 Export password data by reading a Golden Sun save file.  
-```
-Usage: golden_sun_password_exporter.exe sav [OPTIONS] <--text <VALUE>|--memory|--cheat <VALUE>|--export> <INPUT_FILE>
+
+```text
+Usage: golden_sun_password_exporter sav [OPTIONS] <--text <VALUE>|--memory|--cheat <VALUE>|--export> <INPUT_FILE>
 
 Arguments:
   <INPUT_FILE>  Golden Sun save file
@@ -42,10 +50,13 @@ Options:
   -e, --export               Export save data to a text file for Dyrati's "Golden Sun Password Generator"
   -o, --output <OUTPUT_DIR>  Output directory
 ```
+
 ### Subcommand: `txt`  
+
 Export password data by reading a Golden Sun password text file.  
-```
-Usage: golden_sun_password_exporter.exe txt [OPTIONS] <--text|--memory|--cheat <VALUE>|--export> <INPUT_FILE>
+
+```text
+Usage: golden_sun_password_exporter.exe txt [OPTIONS] <--grade <VALUE>|--text|--memory|--cheat <VALUE>|--export> <INPUT_FILE>
 
 Arguments:
   <INPUT_FILE>  Golden Sun password text file
@@ -58,10 +69,12 @@ Options:
   -e, --export               Generate and export save data to a text file for Dyrati's "Golden Sun Password Generator"
   -o, --output <OUTPUT_DIR>  Output directory
 ```
+
 ### Subcommand: `dmp`  
 Export password data by reading a Golden Sun password memory dump binary file.  
-```
-Usage: golden_sun_password_exporter.exe dmp [OPTIONS] <--text <VALUE>|--cheat <VALUE>|--export> <INPUT_FILE>
+
+```text
+Usage: golden_sun_password_exporter.exe dmp [OPTIONS] <--grade <VALUE>|--text <VALUE>|--cheat <VALUE>|--export> <INPUT_FILE>
 
 Arguments:
   <INPUT_FILE>  Golden Sun password memory dump binary file
