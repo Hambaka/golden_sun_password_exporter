@@ -59,7 +59,7 @@ fn main() {
           arg!(-o --output <OUTPUT_DIR> "Output directory").value_parser(value_parser!(PathBuf))
         ])
         .group(ArgGroup::new("txt_args")
-          .args(["text", "memory", "cheat", "export"])
+          .args(["grade", "text", "memory", "cheat", "export"])
           .required(true)
           .multiple(true)
         )
@@ -76,7 +76,7 @@ fn main() {
           arg!(-o --output <OUTPUT_DIR> "Output directory").value_parser(value_parser!(PathBuf))
         ])
         .group(ArgGroup::new("dmp_args")
-          .args(["text", "cheat", "export"])
+          .args(["grade", "text", "cheat", "export"])
           .required(true)
           .multiple(true)
         )
@@ -279,12 +279,22 @@ fn main() {
         return;
       }
 
+      // Get flags
+      let to_convert_password = sub_matches.get_flag("text");
+      let to_export_memory_dump = sub_matches.get_flag("memory");
+      let to_export_data_text = sub_matches.get_flag("export");
+
       // Generate save data, and set target password bytes
       let save_data = sav::get_save_data_with_password_bits(&mut password_bits, source_password_grade);
       let target_password_bytes;
       if let Some(target_password_grade) = target_password_grade_option {
         if is_no_need_to_downgrade {
-          target_password_bytes = password_bytes;
+          if !to_convert_password && !to_export_memory_dump && cheat_version_option.is_none() && !to_export_data_text {
+            eprintln!("There is no need to downgrade input file, and seems we don't need to generate and export any file...");
+            return;
+          } else {
+            target_password_bytes = password_bytes;
+          }
         } else {
           target_password_bytes = sav::get_password_bytes_with_save_data(&save_data, target_password_grade);
         }
@@ -301,7 +311,7 @@ fn main() {
       }
 
       // Write files.
-      if sub_matches.get_flag("text") {
+      if to_convert_password {
         if target_password_grade_option.is_none() {
           output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
         } else {
@@ -311,7 +321,7 @@ fn main() {
         output::write_password_text_file_with_bytes(&target_password_bytes, password_version, output_dir_str.as_str());
       }
 
-      if sub_matches.get_flag("memory") {
+      if to_export_memory_dump {
         output::write_memory_dump_file(&target_password_bytes, output_dir_str.as_str());
       }
 
@@ -319,7 +329,7 @@ fn main() {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
       }
 
-      if sub_matches.get_flag("export") {
+      if to_export_data_text {
         if let Some(target_password_grade) = target_password_grade_option {
           if is_no_need_to_downgrade {
             output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
@@ -413,12 +423,20 @@ fn main() {
         return;
       }
 
+      // Get flag
+      let to_export_data_text = sub_matches.get_flag("export");
+
       // Generate save data, and set target password bytes
       let save_data = sav::get_save_data_with_password_bits(&mut password_bits, source_password_grade);
       let target_password_bytes;
       if let Some(target_password_grade) = target_password_grade_option {
         if is_no_need_to_downgrade {
-          target_password_bytes = password_bytes;
+          if password_version_option.is_none() && cheat_version_option.is_none() && !to_export_data_text {
+            eprintln!("There is no need to downgrade input file, and seems we don't need to generate and export any file...");
+            return;
+          } else {
+            target_password_bytes = password_bytes;
+          }
         } else {
           target_password_bytes = sav::get_password_bytes_with_save_data(&save_data, target_password_grade);
         }
@@ -447,7 +465,7 @@ fn main() {
         output::write_cheat_file(&target_password_bytes, cheat_version, output_dir_str.as_str());
       }
 
-      if sub_matches.get_flag("export") {
+      if to_export_data_text {
         if let Some(target_password_grade) = target_password_grade_option {
           if is_no_need_to_downgrade {
             output::write_game_data_text_file(sav::get_exported_data_for_dyrati_sheet_by_save_data(&save_data).as_str(), output_dir_str.as_str());
