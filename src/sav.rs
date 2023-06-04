@@ -1147,7 +1147,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("---start---\n");
   for (i, event) in save_data.events.iter().enumerate() {
     if i == 2 {
-      let inverted_event = (i ^ 1) & 1;
+      let inverted_event = (event ^ 1) & 1;
       exported_text.push_str(format!("{inverted_event}\n").as_str());
     } else {
       exported_text.push_str(format!("{event}\n").as_str());
