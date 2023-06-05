@@ -313,7 +313,7 @@ fn main() {
       // Write files.
       if to_convert_password {
         if target_password_grade_option.is_none() {
-          output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), output_dir_str.as_str());
+          output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), enums::rev_password_version(password_version), output_dir_str.as_str());
         } else {
           output::write_password_text_file_with_bytes(&target_password_bytes, enums::rev_password_version(password_version), output_dir_str.as_str());
         }

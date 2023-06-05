@@ -2,7 +2,8 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use crate::{enums, convert};
+use crate::enums;
+use crate::convert::dmp_to_txt;
 use crate::enums::PasswordVersion;
 
 pub fn create_sav_sub_dir(slot_num: u8, is_clear_data: bool, output_dir_str: &str) -> String {
@@ -29,42 +30,12 @@ pub fn create_output_dir(output_path: &Path, has_output_arg: bool) -> String {
 }
 
 pub fn write_password_text_file_with_bytes(password_bytes: &[u8], password_version: PasswordVersion, output_dir_str: &str) {
-  let mut password_text = String::new();
-
-  match password_version {
-    PasswordVersion::Japanese => {
-      for (i, password_byte) in password_bytes.iter().enumerate() {
-        password_text.push(convert::byte_to_jp(*password_byte));
-        if (i + 1) % 50 == 0 {
-          password_text.push_str("\n\n");
-        } else if (i + 1) % 10 == 0 {
-          password_text.push('\n');
-        } else if (i + 1) % 5 == 0 {
-          password_text.push('　');
-        }
-      }
-    }
-    PasswordVersion::English => {
-      for (i, password_byte) in password_bytes.iter().enumerate() {
-        password_text.push(convert::byte_to_en(*password_byte));
-        if (i + 1) % 50 == 0 {
-          password_text.push_str("\n\n");
-        } else if (i + 1) % 10 == 0 {
-          password_text.push('\n');
-        } else if (i + 1) % 5 == 0 {
-          password_text.push(' ');
-        }
-      }
-    }
-  }
-  let output_path = Path::new(output_dir_str).join("password.txt");
-  let mut output_file = File::create(output_path).expect("Failed to create password text file!");
-  output_file.write_all(password_text.as_bytes()).expect("Failed to write to password text file!");
+  write_converted_password_text_file(dmp_to_txt(password_bytes, password_version).as_str(), password_version, output_dir_str);
 }
 
-pub fn write_converted_password_text_file(converted_password_text: &str, output_dir_str: &str) {
+pub fn write_converted_password_text_file(converted_password_text: &str, password_version: PasswordVersion, output_dir_str: &str) {
   let mut password_text = String::new();
-  let whitespace = match convert::get_password_version(converted_password_text) {
+  let whitespace = match password_version {
     PasswordVersion::Japanese => '　',
     PasswordVersion::English => ' ',
   };
