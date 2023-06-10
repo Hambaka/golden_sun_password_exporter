@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::enums::{get_password_grade_by_bytes_len, PasswordGrade};
+use crate::util::enums::{get_password_grade_by_bytes_len, PasswordGrade};
 
 /* Links to other Golden Sun reference guide (save editing):
    https://gamefaqs.gamespot.com/gba/468548-golden-sun/faqs/43776

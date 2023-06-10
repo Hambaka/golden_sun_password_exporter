@@ -2,9 +2,9 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use crate::enums;
-use crate::convert::dmp_to_txt;
-use crate::enums::PasswordVersion;
+use crate::util::enums;
+use crate::util::convert::dmp_to_txt;
+use crate::util::enums::PasswordVersion;
 
 pub fn create_sav_sub_dir(slot_num: u8, is_clear_data: bool, output_dir_str: &str) -> String {
   let output_path = if is_clear_data {

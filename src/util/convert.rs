@@ -1,4 +1,4 @@
-use crate::enums::PasswordVersion;
+use crate::util::enums::PasswordVersion;
 
 /// Japanese Hiragana characters in Japanese version password.
 ///
@@ -141,14 +141,14 @@ fn en_to_byte(input: char) -> u8 {
 }
 
 /// Convert password byte value to Japanese version password char (Hiragana).
-fn byte_to_jp(input: &u8) -> char {
-  let index = VALID_PASSWORD_BYTES.iter().position(|&x| x == *input).unwrap();
+fn byte_to_jp(input: u8) -> char {
+  let index = VALID_PASSWORD_BYTES.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_CHARS_JP[index]
 }
 
 /// Convert password byte value to English version password char (letters, numbers, signs).
-fn byte_to_en(input: &u8) -> char {
-  let index = VALID_PASSWORD_BYTES.iter().position(|&x| x == *input).unwrap();
+fn byte_to_en(input: u8) -> char {
+  let index = VALID_PASSWORD_BYTES.iter().position(|&x| x == input).unwrap();
   VALID_PASSWORD_CHARS_EN[index]
 }
 
@@ -173,8 +173,8 @@ pub fn txt_to_another_version(password: &str, password_version: PasswordVersion)
 /// Convert password bytes (memory dump) to text string.
 pub fn dmp_to_txt(password_bytes: &[u8], password_version: PasswordVersion) -> String {
   let password = match password_version {
-    PasswordVersion::Japanese => password_bytes.iter().map(byte_to_jp).collect(),
-    PasswordVersion::English => password_bytes.iter().map(byte_to_en).collect(),
+    PasswordVersion::Japanese => password_bytes.iter().map(|x| byte_to_jp(*x)).collect(),
+    PasswordVersion::English => password_bytes.iter().map(|x| byte_to_en(*x)).collect(),
   };
   password
 }
