@@ -965,7 +965,8 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
        So the start index is 4 */
     let mut isaac_inventory_start_index = 4;
     for (i, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
-      if password_bits.bits[62 + i] == 1 {
+      // Reversed order
+      if password_bits.bits[62 + (7 - i)] == 1 {
         items[0][isaac_inventory_start_index] = *psynergy_item;
         isaac_inventory_start_index += 1;
       }
@@ -1118,20 +1119,21 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   mars_djinn_bits.push_bits(save_data.djinn[2], 7);
   jupiter_djinn_bits.push_bits(save_data.djinn[3], 7);
 
+  // Reversed order
   for i in 0..7 {
-    if venus_djinn_bits.bits[i] == 1 {
+    if venus_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(VENUS_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
-    if mars_djinn_bits.bits[i] == 1 {
+    if mars_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(MARS_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
-    if jupiter_djinn_bits.bits[i] == 1 {
+    if jupiter_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(JUPITER_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
-    if mercury_djinn_bits.bits[i] == 1 {
+    if mercury_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(MERCURY_DJINN_NAMES[i]);
     }
     exported_text.push('\n');
