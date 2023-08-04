@@ -1149,6 +1149,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("---start---\n");
   for (i, event) in save_data.events.iter().enumerate() {
     if i == 2 {
+      // Maybe "& 1" is unnecessary, but well
       let inverted_event = (event ^ 1) & 1;
       exported_text.push_str(format!("{inverted_event}\n").as_str());
     } else {
@@ -1163,8 +1164,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("Note: \"Base stats\" is the stats without any djinn, items, or class multipliers.\n");
   exported_text.push_str("      Each character has a default class and apply class multiplier automatically in game,\n");
   exported_text.push_str("      so that means you cannot see these values in game.\n");
-  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Base stats\".\n");
-  exported_text.push_str("      (Although \"Base Stats\" may not be very convenient to use, they are recommended and will not cause any problems)\n\n");
+  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Base stats\".\n\n");
   exported_text.push_str("Range in spreadsheet -> G4:J9\n");
   exported_text.push_str("---------start---------\n");
   for i in 0..6 {
@@ -1175,13 +1175,14 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   }
   exported_text.push_str("----------end----------\n\n\n\n");
 
-  // Stats, there may be some problems in this.
+  // Stats(in-game)
   exported_text.push_str("Stats\nIsaac, Garet, Ivan, Mia\n");
   exported_text.push_str("The order from top to bottom are:\nHP, PP, ATK, DEF, AGI, LCK\n\n");
   exported_text.push_str("Note: \"Stats\" is the stats with no items equipped, and all djinn on standby, but with class multipliers.\n");
   exported_text.push_str("      That means these are the stats values you can see in the game\n");
   exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Stats\".\n");
-  exported_text.push_str("      (Using these stats *may* cause problems. If you encounter problems, please use \"Base Stats\")\n\n");
+  exported_text.push_str("      Sometimes there are multiple possible base stat values that result in the same in-game stats, in which case the spreadsheet assumes the highest option.");
+  exported_text.push_str("      (You can choose to use \"Base Stats\" if you think this \"problem\" really bothers you)\n\n");
   exported_text.push_str("Range in spreadsheet -> G4:J9\n");
   exported_text.push_str("---------start---------\n");
   for i in 0..6 {
