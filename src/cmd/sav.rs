@@ -4,9 +4,9 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 use crate::util::save;
 use crate::util::output;
-use crate::util::enums::{CheatVersion, PasswordVersion, PasswordGrade};
+use crate::util::enums::{CheatVersion, PasswordVersion};
 
-pub fn run(sub_matches: &ArgMatches){
+pub fn run(sub_matches: &ArgMatches) {
   // Read save file.
   let sav_input_path = sub_matches.get_one::<PathBuf>("INPUT_FILE").unwrap();
   let mut input_file = File::open(sav_input_path).expect("An error occurred while opening save file!");
@@ -88,7 +88,7 @@ pub fn run(sub_matches: &ArgMatches){
     }
 
     if sub_matches.get_flag("export") {
-      if matches!(target_password_grade, PasswordGrade::Gold) {
+      if target_password_grade.is_gold() {
         output::write_game_data_text_file(save::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()).as_str(), sub_dir_str.as_str());
       } else {
         output::write_game_data_text_file(save::get_exported_data_for_dyrati_sheet_by_bytes(password_bytes.as_slice(), target_password_grade).as_str(), sub_dir_str.as_str());

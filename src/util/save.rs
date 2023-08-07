@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::util::enums::{get_password_grade_by_bytes_len, PasswordGrade};
+use crate::util::enums::PasswordGrade;
 
 /* Links to other Golden Sun reference guide (save editing):
    https://gamefaqs.gamespot.com/gba/468548-golden-sun/faqs/43776
@@ -582,7 +582,7 @@ fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData)
 
   // If password grade is silver or bronze,
   // insert 8 bits representing which of these items your party has.
-  if !matches!(grade, PasswordGrade::Gold) {
+  if grade.is_silver() || grade.is_bronze() {
     let mut flags = 0;
     for items_per_person in &save_data.items {
       for item in items_per_person {
@@ -598,7 +598,7 @@ fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData)
   }
 
   // If password grade is gold or silver, insert stats.
-  if !matches!(grade, PasswordGrade::Bronze) {
+  if grade.is_gold() || grade.is_silver() {
     for stats_per_person in &save_data.stats {
       // HP
       bits.push_bits(u32::from(stats_per_person[0]), 11);
@@ -616,7 +616,7 @@ fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData)
   }
 
   // If password grade is gold, insert items and coins.
-  if matches!(grade, PasswordGrade::Gold) {
+  if grade.is_gold() {
     bits.push_bits(0, 8);
     let mut counter = 0;
     for items_per_person in &save_data.items {
@@ -719,7 +719,13 @@ pub fn get_password_bytes_with_raw_save_bytes(raw_save: &[u8], grade: PasswordGr
 }
 
 pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {
-  let password_grade = get_password_grade_by_bytes_len(password_bytes.len());
+  let password_grade = match password_bytes.len() {
+    260 => PasswordGrade::Gold,
+    61 => PasswordGrade::Silver,
+    16 => PasswordGrade::Bronze,
+    _ => unreachable!(),
+  };
+
   let mut bytes_data = vec![0; password_bytes.len()];
   /* Remove each byte's position data by minus its index.
      I'm not sure if it's the correct way to do that, but "+ 0x200" works.
@@ -960,7 +966,7 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
 
   /* If password grade is silver or bronze, check 8 psynergy items.
      if it does has one, insert it back to Isaac's inventory */
-  if !matches!(password_grade, PasswordGrade::Gold) {
+  if password_grade.is_silver() || password_grade.is_bronze() {
     /* Isaac's inventory: Great Sword, Steel Armor, Knight's Shield, Knight's Helm
        So the start index is 4 */
     let mut isaac_inventory_start_index = 4;
@@ -974,8 +980,8 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   }
 
   // If password grade is gold or silver, get stats.
-  if !matches!(password_grade, PasswordGrade::Bronze) {
-    let start_index = if matches!(password_grade, PasswordGrade::Gold) {
+  if password_grade.is_gold() || password_grade.is_silver() {
+    let start_index = if password_grade.is_gold() {
       /* (4 * 7) + (4 * 7) + 6
          -> 28 + 28 + 6
          -> 62 */
@@ -1002,7 +1008,7 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
     }
   }
 
-  if matches!(password_grade, PasswordGrade::Gold) {
+  if password_grade.is_gold() {
     /* (4 * 7) + (4 * 7) + 6 + (4 * (11 + 11 + 10 + 10 + 10 + 8))
        -> 28 + 28 + 6 + 240
        -> 302 */
@@ -1034,11 +1040,7 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
 /// Returns `true` if `source_grade` >= `target_grade`.
 pub fn can_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {
   match source_grade {
-    PasswordGrade::Gold => {
-      match target_grade {
-        PasswordGrade::Gold | PasswordGrade::Silver | PasswordGrade::Bronze => true,
-      }
-    }
+    PasswordGrade::Gold => true,
     PasswordGrade::Silver => {
       match target_grade {
         PasswordGrade::Gold => false,
@@ -1069,11 +1071,7 @@ pub fn no_need_to_downgrade(source_grade: PasswordGrade, target_grade: PasswordG
         PasswordGrade::Bronze => false,
       }
     }
-    PasswordGrade::Bronze => {
-      match target_grade {
-        PasswordGrade::Gold | PasswordGrade::Silver | PasswordGrade::Bronze => true,
-      }
-    }
+    PasswordGrade::Bronze => true,
   }
 }
 
@@ -1092,10 +1090,10 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("Source: https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/\n");
   exported_text.push_str("Spreadsheet link: https://docs.google.com/spreadsheets/d/1jQ2Zj2F57Fb4hs0pDYLCaZL-qry7gcVxNbhpq0BJDUs/\n");
   exported_text.push_str("For Windows users, I recommend just using Windows notepad to open this file.\n");
-  exported_text.push_str("Copy the text between \"start\" and \"end\", and paste it into the specified range of the spreadsheet\n\n\n\n");
+  exported_text.push_str("Copy the text between \"start\" and \"end\", and paste it into the specified range of the spreadsheet.\n\n\n\n");
 
   // Levels
-  exported_text.push_str("Levels\nIsaac, Garet, Ivan, Mia\nRange in spreadsheet -> B7:E7\n");
+  exported_text.push_str("Levels\nIsaac, Garet, Ivan, Mia\nRange in spreadsheet -> C8:F8\n");
   exported_text.push_str("--------start--------\n");
   for (i, level) in save_data.levels.iter().enumerate() {
     if i < save_data.levels.len() - 1 {
@@ -1107,7 +1105,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("---------end---------\n\n\n\n");
 
   // Djinn
-  exported_text.push_str("Djinn\nVenus, Mars, Jupiter, Mercury\nRange in spreadsheet -> B11:E17\n");
+  exported_text.push_str("Djinn\nVenus, Mars, Jupiter, Mercury\nRange in spreadsheet -> C12:F18\n");
   exported_text.push_str("--------------------start--------------------\n");
   let mut venus_djinn_bits = BitArray { bits: Vec::new() };
   let mut mercury_djinn_bits = BitArray { bits: Vec::new() };
@@ -1145,7 +1143,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("Note: The value of \"Save Hsu\" is the opposite of each other\n");
   exported_text.push_str("      in the \"Golden Sun Password Generator\" GUI software developed by Paulygon and\n");
   exported_text.push_str("      in the \"Golden Sun Password Generator\" spreadsheet by Dyrati.\n\n");
-  exported_text.push_str("Range in spreadsheet -> D20:D25\n");
+  exported_text.push_str("Range in spreadsheet -> E21:E26\n");
   exported_text.push_str("---start---\n");
   for (i, event) in save_data.events.iter().enumerate() {
     if i == 2 {
@@ -1164,8 +1162,8 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("Note: \"Base stats\" is the stats without any djinn, items, or class multipliers.\n");
   exported_text.push_str("      Each character has a default class and apply class multiplier automatically in game,\n");
   exported_text.push_str("      so that means you cannot see these values in game.\n");
-  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Base stats\".\n\n");
-  exported_text.push_str("Range in spreadsheet -> G4:J9\n");
+  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of J3 to \"Base stats\".\n\n");
+  exported_text.push_str("Range in spreadsheet -> J5:M10\n");
   exported_text.push_str("---------start---------\n");
   for i in 0..6 {
     exported_text.push_str(format!("{}\t", save_data.stats[0][i]).as_str());
@@ -1180,21 +1178,21 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("The order from top to bottom are:\nHP, PP, ATK, DEF, AGI, LCK\n\n");
   exported_text.push_str("Note: \"Stats\" is the stats with no items equipped, and all djinn on standby, but with class multipliers.\n");
   exported_text.push_str("      That means these are the stats values you can see in the game\n");
-  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of G2 to \"Stats\".\n");
-  exported_text.push_str("      Sometimes there are multiple possible base stat values that result in the same in-game stats, in which case the spreadsheet assumes the highest option.");
+  exported_text.push_str("      You can use either \"Base stats\" or \"Stats\", but please remember to switch the value of J3 to \"Stats\".\n");
+  exported_text.push_str("      Sometimes there are multiple possible base stat values that result in the same in-game stats, in which case the spreadsheet assumes the highest option.\n");
   exported_text.push_str("      (You can choose to use \"Base Stats\" if you think this \"problem\" really bothers you)\n\n");
-  exported_text.push_str("Range in spreadsheet -> G4:J9\n");
+  exported_text.push_str("Range in spreadsheet -> J5:M10\n");
   exported_text.push_str("---------start---------\n");
   for i in 0..6 {
-    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as i32).as_str());
-    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as i32).as_str());
-    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as i32).as_str());
-    exported_text.push_str(format!("{}\n", (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as i32).as_str());
+    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32).as_str());
+    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32).as_str());
+    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32).as_str());
+    exported_text.push_str(format!("{}\n", (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32).as_str());
   }
   exported_text.push_str("----------end----------\n\n\n\n");
 
   // Items
-  exported_text.push_str("Items\nIsaac, Garet, Ivan, Mia\nRange in spreadsheet -> G13:J27\n");
+  exported_text.push_str("Items\nIsaac, Garet, Ivan, Mia\nRange in spreadsheet -> J14:M28\n");
   exported_text.push_str("----------------------------------------start----------------------------------------\n");
   for i in 0..15 {
     let isaac_item = save_data.items[0][i];
@@ -1243,7 +1241,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   }
   exported_text.push_str("-----------------------------------------end-----------------------------------------\n\n\n\n");
   // Coins
-  exported_text.push_str("Coins\nRange in spreadsheet -> C27\n");
+  exported_text.push_str("Coins\nRange in spreadsheet -> D28\n");
   exported_text.push_str("---start---\n");
   exported_text.push_str(format!("{}\n", save_data.coins).as_str());
   exported_text.push_str("----end----\n");

@@ -5,7 +5,7 @@ use clap::ArgMatches;
 use crate::util::save;
 use crate::util::output;
 use crate::util::convert;
-use crate::util::enums::{CheatVersion, PasswordGrade, PasswordVersion, rev_password_version};
+use crate::util::enums::{CheatVersion, PasswordGrade, PasswordVersion};
 
 pub fn run(sub_matches: &ArgMatches) {
   // Read password text file.
@@ -108,9 +108,9 @@ pub fn run(sub_matches: &ArgMatches) {
   // Write files.
   if to_convert_password {
     if target_password_grade_option.is_none() {
-      output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), rev_password_version(password_version), output_dir_str.as_str());
+      output::write_converted_password_text_file(convert::txt_to_another_version(&password_without_whitespace, password_version).as_str(), password_version.rev(), output_dir_str.as_str());
     } else {
-      output::write_password_text_file_with_bytes(&target_password_bytes, rev_password_version(password_version), output_dir_str.as_str());
+      output::write_password_text_file_with_bytes(&target_password_bytes, password_version.rev(), output_dir_str.as_str());
     }
   } else if target_password_grade_option.is_some() && !is_no_need_to_downgrade {
     output::write_password_text_file_with_bytes(&target_password_bytes, password_version, output_dir_str.as_str());

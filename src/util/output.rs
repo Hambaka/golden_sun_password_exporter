@@ -71,7 +71,7 @@ pub fn write_memory_dump_file(password_bytes: &[u8], sub_dir_str: &str) {
 /// Though I'm not sure, maybe you can use this kind of raw cheat code on your phone as well?
 pub fn write_cheat_file(password_bytes: &[u8], cheat_version: enums::CheatVersion, sub_dir_str: &str) {
   // The address for password input screen in Golden Sun: The Lost Age
-  let mut address = enums::get_cheat_address(cheat_version);
+  let mut address = cheat_version.get_address();
   let mut text = String::new();
   let size = password_bytes.len();
   let loop_num = (size - 2) / 4;

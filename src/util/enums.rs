@@ -8,6 +8,20 @@ pub enum PasswordGrade {
   Bronze,
 }
 
+impl PasswordGrade {
+  pub fn is_gold(&self) -> bool {
+    matches!(*self, PasswordGrade::Gold)
+  }
+
+  pub fn is_silver(&self) -> bool {
+    matches!(*self, PasswordGrade::Silver)
+  }
+
+  pub fn is_bronze(&self) -> bool {
+    matches!(*self, PasswordGrade::Bronze)
+  }
+}
+
 impl ValueEnum for PasswordGrade {
   fn value_variants<'a>() -> &'a [Self] {
     &[Self::Gold, Self::Silver, Self::Bronze]
@@ -28,6 +42,15 @@ pub enum PasswordVersion {
   Japanese,
   //Letter, number, and symbol.
   English,
+}
+
+impl PasswordVersion {
+  pub fn rev(&self) -> PasswordVersion {
+    match *self {
+      PasswordVersion::Japanese => PasswordVersion::English,
+      PasswordVersion::English => PasswordVersion::Japanese,
+    }
+  }
 }
 
 impl ValueEnum for PasswordVersion {
@@ -54,9 +77,25 @@ pub enum CheatVersion {
   Italy,
 }
 
-impl ValueEnum for CheatVersion{
+// For Golden Sun: Lost Age
+impl CheatVersion {
+  pub fn get_address(&self) -> u32 {
+    match *self {
+      // 0x0200A78A
+      CheatVersion::Japan => 0x0200_A78A,
+      // 0x0200A74A
+      CheatVersion::USA | CheatVersion::Europe => 0x0200_A74A,
+      // 0x0200A742
+      CheatVersion::Germany | CheatVersion::France | CheatVersion::Italy => 0x0200_A742,
+      // 0x0200A73E
+      CheatVersion::Spain => 0x0200_A73E,
+    }
+  }
+}
+
+impl ValueEnum for CheatVersion {
   fn value_variants<'a>() -> &'a [Self] {
-    &[Self::Japan, Self::USA, Self::Europe, Self::Germany,Self::Spain,Self::France,Self::Italy]
+    &[Self::Japan, Self::USA, Self::Europe, Self::Germany, Self::Spain, Self::France, Self::Italy]
   }
 
   fn to_possible_value(&self) -> Option<PossibleValue> {
@@ -69,35 +108,5 @@ impl ValueEnum for CheatVersion{
       Self::France => PossibleValue::new("f").help("Golden Sun - L'Age Perdu (France)"),
       Self::Italy => PossibleValue::new("i").help("Golden Sun - L'Era Perduta (Italy)"),
     })
-  }
-}
-
-pub fn get_password_grade_by_bytes_len(password_bytes_len: usize) -> PasswordGrade {
-  match password_bytes_len {
-    260 => PasswordGrade::Gold,
-    61 => PasswordGrade::Silver,
-    16 => PasswordGrade::Bronze,
-    _ => unreachable!(),
-  }
-}
-
-pub fn rev_password_version(password_version: PasswordVersion) -> PasswordVersion {
-  match password_version {
-    PasswordVersion::Japanese => PasswordVersion::English,
-    PasswordVersion::English => PasswordVersion::Japanese,
-  }
-}
-
-// For Golden Sun: Lost Age
-pub fn get_cheat_address(cheat_version: CheatVersion) -> i32 {
-  match cheat_version {
-    // 0x0200A78A
-    CheatVersion::Japan => 0x0200_A78A,
-    // 0x0200A74A
-    CheatVersion::USA | CheatVersion::Europe => 0x0200_A74A,
-    // 0x0200A742
-    CheatVersion::Germany | CheatVersion::France | CheatVersion::Italy => 0x0200_A742,
-    // 0x0200A73E
-    CheatVersion::Spain => 0x0200_A73E,
   }
 }
